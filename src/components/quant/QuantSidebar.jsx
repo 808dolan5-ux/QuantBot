@@ -2,7 +2,7 @@ import { Plus, X } from 'lucide-react';
 import GroupPills from './GroupPills';
 import ProfileFooter from './ProfileFooter';
 
-export default function QuantSidebar({ user, sessions, groups, activeId, activeGroup, onSelect, onNew, onGroup, onAddGroup, open, onClose }) {
+export default function QuantSidebar({ user, sessions, activeId, activeGroup, onSelect, onNew, onGroup, open, onClose }) {
   return (
     <>
       {open && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={onClose} />}
@@ -17,7 +17,7 @@ export default function QuantSidebar({ user, sessions, groups, activeId, activeG
             New chat
           </button>
         </div>
-        <GroupPills groups={groups} active={activeGroup} onSelect={onGroup} onAdd={onAddGroup} />
+        <GroupPills active={activeGroup} onSelect={onGroup} />
         <div className="px-4 pt-3 pb-1 text-xs text-muted-foreground">Recents</div>
         <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-0.5">
           {sessions.length === 0 && <p className="px-2 py-2 text-xs text-muted-foreground">No conversations yet.</p>}

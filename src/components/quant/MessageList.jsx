@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import MessageBubble from './MessageBubble';
-import LogoMark from './LogoMark';
+import ChartLoader from './ChartLoader';
 
 export default function MessageList({ messages, thinking }) {
   const endRef = useRef(null);
@@ -15,8 +15,8 @@ export default function MessageList({ messages, thinking }) {
         {messages.map((m) => <MessageBubble key={m.id} message={m} />)}
         {thinking && (
           <div className="flex items-center gap-3 text-muted-foreground text-sm">
-            <LogoMark className="w-5 h-5 animate-spin [animation-duration:2.5s]" />
-            Quant AI is thinking...
+            <ChartLoader />
+            Quant AI is analyzing...
           </div>
         )}
         <div ref={endRef} />

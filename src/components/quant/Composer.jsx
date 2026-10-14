@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MODELS } from '@/lib/models';
 
 const STYLES = ['Normal', 'Concise', 'Explanatory', 'Formal'];
+const triggerCls = 'h-8 w-auto gap-2 border-border bg-transparent text-xs text-muted-foreground';
 
-export default function Composer({ onSend, disabled, style, onStyleChange }) {
+export default function Composer({ onSend, disabled, style, onStyleChange, model, onModelChange }) {
   const [text, setText] = useState('');
 
   const submit = () => {
@@ -24,15 +26,21 @@ export default function Composer({ onSend, disabled, style, onStyleChange }) {
           rows={2}
           className="w-full resize-none bg-transparent px-4 pt-4 text-[15px] outline-none placeholder:text-muted-foreground max-h-60"
         />
-        <div className="flex items-center justify-between px-3 pb-3">
-          <Select value={style} onValueChange={onStyleChange}>
-            <SelectTrigger className="h-8 w-auto gap-2 border-border bg-transparent text-xs text-muted-foreground">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STYLES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center justify-between gap-2 px-3 pb-3">
+          <div className="flex items-center gap-2">
+            <Select value={style} onValueChange={onStyleChange}>
+              <SelectTrigger className={triggerCls}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {STYLES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={model} onValueChange={onModelChange}>
+              <SelectTrigger className={triggerCls}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {MODELS.map((m) => <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <button
             onClick={submit}
             disabled={disabled || !text.trim()}

@@ -1,4 +1,5 @@
-import { LogOut } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 
 export default function ProfileFooter({ user }) {
@@ -13,6 +14,9 @@ export default function ProfileFooter({ user }) {
           <div className="text-sm font-medium truncate">{name}</div>
           <div className="text-xs text-muted-foreground truncate">{user?.email}</div>
         </div>
+        <Link to="/settings" title="Settings" className="p-2 rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">
+          <Settings className="w-4 h-4" />
+        </Link>
         <button onClick={() => base44.auth.logout('/login')} title="Log out" className="p-2 rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">
           <LogOut className="w-4 h-4" />
         </button>

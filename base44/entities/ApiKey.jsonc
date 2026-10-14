@@ -1,0 +1,48 @@
+{
+  "name": "ApiKey",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Owner user id"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "anthropic"
+      ]
+    },
+    "ciphertext": {
+      "type": "string",
+      "description": "AES-GCM encrypted key (base64)"
+    },
+    "iv": {
+      "type": "string",
+      "description": "Encryption IV (base64)"
+    },
+    "last4": {
+      "type": "string",
+      "description": "Last 4 characters, for display"
+    }
+  },
+  "required": [
+    "user_id",
+    "provider",
+    "ciphertext",
+    "iv"
+  ],
+  "rls": {
+    "read": false,
+    "delete": false,
+    "create": {
+      "user_condition": {
+        "role": "server_only"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "server_only"
+      }
+    }
+  }
+}

@@ -1,10 +1,10 @@
-// QuantBot's local backend for the desktop app: what Base44 does for the web version (data, files, keys,
+// Desktop app only. QuantBot's local backend: what Base44 does for the web version (data, files, keys,
 // AI calls), done in the app's data folder on this PC. Bundled into the desktop app by the GitHub build.
-import fs from 'fs';
-import path from 'path';
-import { createDb } from './db.js';
-import { createUser, createKeys, createFiles } from './store.js';
-import { createFunctions } from './functions.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { createDb } from './db.ts';
+import { createUser, createKeys, createFiles } from './store.ts';
+import { createFunctions } from './functions.ts';
 
 export function createBackend({ dataDir, encrypt, decrypt, userName }) {
   fs.mkdirSync(dataDir, { recursive: true });

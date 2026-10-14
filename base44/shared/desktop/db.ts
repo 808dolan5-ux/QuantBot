@@ -1,10 +1,12 @@
-// Local database: each entity is one JSON file in the app's data folder, held in memory and saved shortly after each change
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
-import { matches, sortBy, project, aggregate } from './query.js';
-import { DEFAULTS } from './schemas.js';
+// Desktop app only. Local database: each entity is one JSON file in the app's data folder,
+// held in memory and saved shortly after each change.
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { matches, sortBy, project, aggregate } from './query.ts';
 
+// Default field values from the entity schemas, baked in by the desktop build (src/desktop/vite.backend.config.js)
+const DEFAULTS = typeof __ENTITY_DEFAULTS__ === 'undefined' ? {} : __ENTITY_DEFAULTS__;
 const OPS = ['list', 'filter', 'get', 'create', 'bulkCreate', 'update', 'bulkUpdate', 'delete', 'deleteMany', 'updateMany', 'count', 'aggregate'];
 
 export function createDb(dir, userId) {

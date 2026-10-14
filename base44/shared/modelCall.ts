@@ -4,6 +4,9 @@ import { callGemini } from './gemini.ts';
 
 export const PROVIDER_NAMES = { anthropic: 'Anthropic', google: 'Google Gemini' };
 
+// Same defaults as src/lib/models.js
+export const DEFAULT_MODELS = { anthropic: 'claude-opus-5', google: 'gemini-3.8-flash' };
+
 const MODEL_PROVIDERS = {
   'claude-opus-5': 'anthropic',
   'claude-sonnet-4-5': 'anthropic',

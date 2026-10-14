@@ -1,4 +1,4 @@
-// Query matching, sorting and grouping for the local database (the operators the app uses)
+// Desktop app only. Query matching, sorting and grouping for the local database (the operators the app uses).
 const valueAt = (row, key) => key.split('.').reduce((v, k) => (v == null ? undefined : v[k]), row);
 const same = (a, b) => (Array.isArray(a) ? a.includes(b) : a === b);
 const isOps = (cond) => cond && typeof cond === 'object' && !Array.isArray(cond) && Object.keys(cond).some((k) => k.startsWith('$'));

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, History } from 'lucide-react';
 import * as api from '@/lib/quantApi';
 import { MODELS } from '@/lib/models';
 import useStrategyLab from '@/hooks/useStrategyLab';
@@ -33,6 +33,9 @@ export default function StrategyTester() {
       <header className="h-14 border-b border-border flex items-center gap-3 px-4">
         <Link to="/" className="p-2 rounded-md hover:bg-accent"><ArrowLeft className="w-4 h-4" /></Link>
         <h1 className="font-heading text-lg font-semibold">Strategy Converter & Tester</h1>
+        <Link to="/test-history" className="ml-auto flex items-center gap-2 text-sm px-3 py-1.5 rounded-md hover:bg-accent">
+          <History className="w-4 h-4 text-primary" />History
+        </Link>
       </header>
       <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5">
         <TesterToolbar

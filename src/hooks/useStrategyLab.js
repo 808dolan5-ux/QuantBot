@@ -6,6 +6,7 @@ import { WINDOWS, findUnseenWindow, customWindow, overlapsSeen, fmtDate } from '
 import { runInWorker } from '@/lib/backtest/runWorker';
 import { computeMetrics, downsample } from '@/lib/backtest/metrics';
 import { buildFixPrompt } from '@/lib/backtest/fixPrompt';
+import { createTestSession, saveRun } from '@/lib/backtest/persist';
 
 const WARMUP = 500;
 const { StrategyRun, DataUsage } = base44.entities;
@@ -18,6 +19,7 @@ export default function useStrategyLab(config) {
   const [error, setError] = useState('');
   const stopRef = useRef(false);
   const runsRef = useRef([]);
+  const sessionsRef = useRef({});
 
   useEffect(() => { loadDatasets().then(setDatasets); }, []);
 
@@ -32,7 +34,7 @@ export default function useStrategyLab(config) {
     return { ...w, label: def.label, reused: def.id === 'custom' && overlapsSeen(bars.time, w, used) };
   }
 
-  async function runOnce(previous) {
+  async function runOnce(previous, session) {
     const ds = datasets.find((d) => d.id === config.datasetId);
     if (!config.botName.trim()) throw new Error('Give the bot a name so its unseen data can be tracked.');
     if (!ds) throw new Error('Pick a market first.');
@@ -73,20 +75,20 @@ export default function useStrategyLab(config) {
     const version = (await StrategyRun.count({ bot_name: config.botName })) + 1;
     const fixPrompt = buildFixPrompt({ version, windowText, metrics, results: conv.results, log });
     const logText = log.map((e) => `[${e.level.toUpperCase()}] ${e.t ? new Date(e.t).toISOString().slice(0, 16) : ''} ${e.msg}`).join('\n').slice(0, 20000);
-    const saved = await StrategyRun.create({
+    const { saved, session: nextSession } = await saveRun(session || await createTestSession(config, ds), {
       bot_name: config.botName, version, target: config.target, model: config.model, symbol: ds.symbol,
       window_label: w.label, start: new Date(bars.time[w.from]).toISOString(), end: new Date(bars.time[w.to]).toISOString(),
       rules: config.rules, code: conv.code, sim_code: conv.sim_code, summary: conv.summary, results: conv.results,
       metrics: { ...metrics, profitFactor: Number.isFinite(metrics.profitFactor) ? metrics.profitFactor : null }, log: logText, fix_prompt: fixPrompt,
-    });
-    await DataUsage.create({ bot_name: config.botName, symbol: ds.symbol, start: saved.start, end: saved.end, run_id: saved.id });
+    }, sim.trades);
+    sessionsRef.current[nextSession.id] = nextSession;
 
     const priceBars = Array.from({ length: w.to - w.from + 1 }, (_, k) => {
       const j = w.from + k;
       return { t: bars.time[j], open: bars.open[j], close: bars.close[j], high: bars.high[j], low: bars.low[j], volume: bars.volume[j] };
     });
     return {
-      id: saved.id, version, target: config.target, windowText, ...conv, metrics, log, fixPrompt,
+      id: saved.id, sessionId: nextSession.id, version, target: config.target, windowText, ...conv, metrics, log, fixPrompt,
       trades: sim.trades, equity: downsample(sim.equity), price: priceBars, balance: config.balance,
     };
   }
@@ -97,7 +99,7 @@ export default function useStrategyLab(config) {
     let prev = previous;
     try {
       for (let k = 0; k < iterations && !stopRef.current; k++) {
-        const run = await runOnce(prev);
+        const run = await runOnce(prev, prev ? sessionsRef.current[prev.sessionId] : null);
         runsRef.current = [...runsRef.current, run];
         setRuns(runsRef.current);
         setActiveIdx(runsRef.current.length - 1);

@@ -2,6 +2,10 @@
   "name": "StrategyRun",
   "type": "object",
   "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "TestSession this version belongs to"
+    },
     "bot_name": {
       "type": "string"
     },

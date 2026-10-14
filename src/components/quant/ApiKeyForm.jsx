@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Eye, EyeOff, Lock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { saveKey } from '@/lib/quantApi';
+import { PROVIDERS } from '@/lib/models';
 
-export default function ApiKeyForm({ onSaved, buttonLabel = 'Save key' }) {
+export default function ApiKeyForm({ provider, onSaved, buttonLabel = 'Save key' }) {
+  const { short, prefix } = PROVIDERS[provider];
   const [value, setValue] = useState('');
   const [show, setShow] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -11,11 +13,11 @@ export default function ApiKeyForm({ onSaved, buttonLabel = 'Save key' }) {
 
   const save = async () => {
     const key = value.trim();
-    if (!key.startsWith('sk-ant-')) return setError('Anthropic keys start with "sk-ant-".');
+    if (!key.startsWith(prefix)) return setError(`${short} keys start with "${prefix}".`);
     setSaving(true);
     setError('');
     try {
-      const status = await saveKey(key);
+      const status = await saveKey(provider, key);
       setValue('');
       onSaved(status);
     } catch (e) {
@@ -36,7 +38,7 @@ export default function ApiKeyForm({ onSaved, buttonLabel = 'Save key' }) {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && save()}
-            placeholder="sk-ant-..."
+            placeholder={`${prefix}...`}
             className="w-full h-10 rounded-lg bg-background border border-input pl-9 pr-10 text-sm font-mono outline-none focus:border-primary"
           />
           <button type="button" onClick={() => setShow(!show)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">

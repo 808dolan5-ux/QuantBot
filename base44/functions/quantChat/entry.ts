@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { CLAUDE_MODELS, callClaude, getAnthropicKey } from '../../shared/claude.ts';
+import { providerOf, toTurns, callUserModel } from '../../shared/llm.ts';
 import { SIGNAL_SPEC } from '../../shared/signals.ts';
 
 const SYSTEM_PROMPT = `You are QuantBot, an AI quant developer: an institutional-grade assistant helping MetaTrader users with MQL5 development, algorithmic trading, indicators, scripts, TradingView Pine Script and prop-firm (FTMO / Lucid Trading) strategy engineering. Default context: Gold (XAUUSD) M15 scalping and the "gold scalper.mq5" Expert Advisor.
@@ -39,18 +39,6 @@ const PROJECT_HINTS = {
   Pine: 'Active project: Pine (TradingView Pine Script v5 strategies and indicators).',
 };
 
-// Anthropic requires alternating roles starting with "user": merge consecutive same-role turns
-function toClaudeMessages(history) {
-  const out = [];
-  for (const m of history) {
-    const last = out[out.length - 1];
-    if (last && last.role === m.role) last.content += `\n\n${m.content}`;
-    else out.push({ role: m.role, content: m.content });
-  }
-  while (out.length && out[0].role !== 'user') out.shift();
-  return out;
-}
-
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -59,8 +47,8 @@ export default async function (req) {
 
     const { session_id, style, model } = await req.json();
     if (!session_id) return Response.json({ error: 'session_id required' }, { status: 400 });
-    const useClaude = model && model !== 'builtin';
-    if (useClaude && !CLAUDE_MODELS.includes(model)) return Response.json({ error: 'Unknown model' }, { status: 400 });
+    const useOwnKey = model && model !== 'builtin';
+    if (useOwnKey && !providerOf(model)) return Response.json({ error: 'Unknown model' }, { status: 400 });
 
     const session = await base44.entities.ChatSession.get(session_id);
     if (!session || session.created_by_id !== user.id) {
@@ -73,10 +61,8 @@ export default async function (req) {
     const system = `${SYSTEM_PROMPT}\n${PROJECT_HINTS[session.group] || ''}\n${STYLE_HINTS[style] || STYLE_HINTS.Concise}\nThe trader's name is ${user.full_name || 'Trader'}.`;
 
     let reply;
-    if (useClaude) {
-      const apiKey = await getAnthropicKey(base44, user.id);
-      if (!apiKey) return Response.json({ error: 'No Anthropic API key linked. Add one in Settings.' }, { status: 400 });
-      reply = await callClaude(apiKey, model, system, toClaudeMessages(history));
+    if (useOwnKey) {
+      reply = await callUserModel(base44, user.id, model, system, toTurns(history));
     } else {
       const transcript = history
         .map((m) => `${m.role === 'user' ? 'TRADER' : 'QUANTBOT'}: ${m.content.slice(0, 12000)}`)

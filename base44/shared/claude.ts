@@ -1,14 +1,3 @@
-import { decryptText, findKeyRecord } from './apiKeyCrypto.ts';
-
-export const CLAUDE_MODELS = ['claude-opus-5', 'claude-sonnet-4-5', 'claude-opus-4-1', 'claude-haiku-4-5'];
-
-// Returns the user's decrypted Anthropic key, or null if none is linked
-export async function getAnthropicKey(base44, userId) {
-  const record = await findKeyRecord(base44, userId, 'anthropic');
-  if (!record) return null;
-  return await decryptText(record.ciphertext, record.iv);
-}
-
 export async function callClaude(apiKey, model, system, messages, maxTokens = 8192) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',

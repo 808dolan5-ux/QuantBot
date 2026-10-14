@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { CLAUDE_MODELS, callClaude, getAnthropicKey } from '../../shared/claude.ts';
+import { providerOf, callUserModel } from '../../shared/llm.ts';
 import { SIGNAL_SPEC, SIGNAL_RULE } from '../../shared/signals.ts';
 
 const TARGETS = {
@@ -65,8 +65,8 @@ export default async function (req) {
     if (!strategy?.trim()) return Response.json({ error: 'Paste a strategy first' }, { status: 400 });
     if (strategy.length > 40000 || (rules || '').length > 10000) return Response.json({ error: 'Strategy or rules too long' }, { status: 400 });
     if (!TARGETS[target]) return Response.json({ error: 'Target must be MT5 or Pine' }, { status: 400 });
-    const useClaude = model && model !== 'builtin';
-    if (useClaude && !CLAUDE_MODELS.includes(model)) return Response.json({ error: 'Unknown model' }, { status: 400 });
+    const useOwnKey = model && model !== 'builtin';
+    if (useOwnKey && !providerOf(model)) return Response.json({ error: 'Unknown model' }, { status: 400 });
 
     const marketInfo = market
       ? `MARKET: ${clip(market.symbol, 20)} ${clip(market.timeframe, 10)} bars, contract size ${Number(market.contract_size) || 100}, point ${Number(market.point) || 0.01}, starting balance ${Number(market.balance) || 10000}.`
@@ -77,10 +77,8 @@ export default async function (req) {
     }
 
     let report;
-    if (useClaude) {
-      const apiKey = await getAnthropicKey(base44, user.id);
-      if (!apiKey) return Response.json({ error: 'No Anthropic API key linked. Add one in Settings.' }, { status: 400 });
-      const text = await callClaude(apiKey, model, SYSTEM, [{ role: 'user', content: task }], 20000);
+    if (useOwnKey) {
+      const text = await callUserModel(base44, user.id, model, SYSTEM, [{ role: 'user', content: task }], 20000);
       report = parseReport(text);
     } else {
       report = await base44.asServiceRole.integrations.Core.InvokeLLM({

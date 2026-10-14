@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import * as api from '@/lib/quantApi';
-import { MODELS } from '@/lib/models';
+import { missingKey } from '@/lib/models';
 import { useToast } from '@/components/ui/use-toast';
 import QuantSidebar from '@/components/quant/QuantSidebar';
 import ChatHeader from '@/components/quant/ChatHeader';
@@ -34,7 +34,8 @@ export default function QuantChat() {
   useEffect(() => { refreshSessions(); }, [refreshSessions]);
 
   const session = sessions.find((s) => s.id === activeId) || null;
-  const needsKey = MODELS.find((m) => m.id === model)?.needsKey && keyStatus && !keyStatus.linked;
+  const missing = missingKey(model, keyStatus);
+  const needsKey = !!missing;
 
   const changeModel = (m) => { setModel(m); localStorage.setItem('quant_model', m); };
 
@@ -118,7 +119,7 @@ export default function QuantChat() {
           onMenu={() => setSidebarOpen(true)}
         />
         {hasChat ? <MessageList messages={messages} thinking={thinking} /> : <HomeGreeting name={firstName} />}
-        {needsKey && <NoKeyBanner onSaved={setKeyStatus} />}
+        {needsKey && <NoKeyBanner provider={missing} onSaved={setKeyStatus} />}
         <MessageQueue queue={queue} onRemove={(id) => setQueue((q) => q.filter((x) => x.id !== id))} />
         <Composer
           onSend={submit} disabled={needsKey}

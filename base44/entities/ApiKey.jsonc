@@ -9,7 +9,8 @@
     "provider": {
       "type": "string",
       "enum": [
-        "anthropic"
+        "anthropic",
+        "google"
       ]
     },
     "ciphertext": {

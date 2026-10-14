@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Lock } from 'lucide-react';
 import { getKeyStatus } from '@/lib/quantApi';
-import AnthropicKeyCard from '@/components/quant/AnthropicKeyCard';
+import ProviderKeyCard from '@/components/quant/ProviderKeyCard';
 
 export default function Settings() {
   const [status, setStatus] = useState(null);
@@ -19,11 +19,12 @@ export default function Settings() {
 
         <section className="mt-8 space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">API Keys</h2>
-          <AnthropicKeyCard status={status} onChange={setStatus} />
+          <ProviderKeyCard provider="anthropic" status={status} onChange={setStatus} />
+          <ProviderKeyCard provider="google" status={status} onChange={setStatus} />
           <p className="flex items-start gap-2 text-xs text-muted-foreground">
             <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             Keys are encrypted with AES-256 on the server before being saved, can't be read back by the browser,
-            and are only decrypted on the server when your message is sent to Claude.
+            and are only decrypted on the server when your request is sent to Claude or Gemini.
           </p>
         </section>
       </div>

@@ -31,9 +31,10 @@ export async function askQuantAI(sessionId, style, model) {
 
 // API keys: encrypted and decrypted only on the server
 const keys = async (payload) => (await base44.functions.invoke('apiKeys', payload)).data;
-export const getKeyStatus = () => keys({ action: 'status', provider: 'anthropic' });
-export const saveKey = (apiKey) => keys({ action: 'save', provider: 'anthropic', api_key: apiKey });
-export const removeKey = () => keys({ action: 'remove', provider: 'anthropic' });
+// Each returns the status of every provider: { anthropic: {linked, last4}, google: {linked, last4} }
+export const getKeyStatus = () => keys({ action: 'status' });
+export const saveKey = (provider, apiKey) => keys({ action: 'save', provider, api_key: apiKey });
+export const removeKey = (provider) => keys({ action: 'remove', provider });
 
 export async function deleteSession(id) {
   await ChatMessage.deleteMany({ session_id: id });

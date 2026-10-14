@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, History } from 'lucide-react';
 import * as api from '@/lib/quantApi';
-import { MODELS } from '@/lib/models';
+import { missingKey } from '@/lib/models';
 import useStrategyLab from '@/hooks/useStrategyLab';
 import TesterToolbar from '@/components/tester/TesterToolbar';
 import TestSettings from '@/components/tester/TestSettings';
@@ -25,7 +25,8 @@ export default function StrategyTester() {
   useEffect(() => { api.getKeyStatus().then(setKeyStatus); }, []);
   useEffect(() => { if (!cfg.datasetId && lab.datasets[0]) set('datasetId', lab.datasets[0].id); }, [lab.datasets, cfg.datasetId]);
 
-  const needsKey = MODELS.find((m) => m.id === cfg.model)?.needsKey && keyStatus && !keyStatus.linked;
+  const missing = missingKey(cfg.model, keyStatus);
+  const needsKey = !!missing;
   const active = lab.runs[lab.activeIdx];
 
   return (
@@ -43,7 +44,7 @@ export default function StrategyTester() {
           disabled={!cfg.strategy.trim() || !cfg.botName.trim() || cfg.balance < 100 || needsKey}
         />
         <TestSettings cfg={cfg} set={set} datasets={lab.datasets} />
-        {needsKey && <div className="-mx-4 md:-mx-6"><NoKeyBanner onSaved={setKeyStatus} /></div>}
+        {needsKey && <div className="-mx-4 md:-mx-6"><NoKeyBanner provider={missing} onSaved={setKeyStatus} /></div>}
         <StrategyForm strategy={cfg.strategy} onStrategy={(v) => set('strategy', v)} rules={cfg.rules} onRules={(v) => set('rules', v)} />
         {lab.running && (
           <div className="flex flex-col items-center gap-2 py-6 text-sm text-muted-foreground">

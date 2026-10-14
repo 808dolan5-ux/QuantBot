@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, History } from 'lucide-react';
 import * as api from '@/lib/quantApi';
-import { missingKey } from '@/lib/models';
+import { base44 } from '@/api/base44Client';
+import { missingKey, defaultModel } from '@/lib/models';
 import useStrategyLab from '@/hooks/useStrategyLab';
 import TesterToolbar from '@/components/tester/TesterToolbar';
 import TestSettings from '@/components/tester/TestSettings';
@@ -22,7 +23,12 @@ export default function StrategyTester() {
   const [keyStatus, setKeyStatus] = useState(null);
   const lab = useStrategyLab(cfg);
 
-  useEffect(() => { api.getKeyStatus().then(setKeyStatus); }, []);
+  useEffect(() => {
+    Promise.all([api.getKeyStatus(), base44.auth.me()]).then(([status, user]) => {
+      setKeyStatus(status);
+      set('model', defaultModel(status, user));
+    });
+  }, []);
   useEffect(() => { if (!cfg.datasetId && lab.datasets[0]) set('datasetId', lab.datasets[0].id); }, [lab.datasets, cfg.datasetId]);
 
   const missing = missingKey(cfg.model, keyStatus);

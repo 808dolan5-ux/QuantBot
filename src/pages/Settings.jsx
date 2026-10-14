@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Lock } from 'lucide-react';
 import { getKeyStatus } from '@/lib/quantApi';
 import ProviderKeyCard from '@/components/quant/ProviderKeyCard';
+import DefaultModelsCard from '@/components/settings/DefaultModelsCard';
 
 export default function Settings() {
   const [status, setStatus] = useState(null);
@@ -26,6 +27,11 @@ export default function Settings() {
             Keys are encrypted with AES-256 on the server before being saved, can't be read back by the browser,
             and are only decrypted on the server when your request is sent to Claude or Gemini.
           </p>
+        </section>
+
+        <section className="mt-8 space-y-3">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Models</h2>
+          <DefaultModelsCard />
         </section>
       </div>
     </div>

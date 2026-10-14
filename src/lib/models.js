@@ -20,6 +20,14 @@ export function missingKey(modelId, status) {
   return provider && status && !status[provider]?.linked ? provider : null;
 }
 
+export const DEFAULT_MODELS = { anthropic: 'claude-opus-5', google: 'gemini-3.8-flash' };
+
+// Tester default: your Claude model when an Anthropic key is linked, your Gemini model when only Google is linked
+export function defaultModel(status, user) {
+  if (!status?.anthropic?.linked && status?.google?.linked) return user?.default_gemini_model || DEFAULT_MODELS.google;
+  return user?.default_claude_model || DEFAULT_MODELS.anthropic;
+}
+
 export const GROUPS = [
   { value: 'MT5', label: 'MT5' },
   { value: 'Pine', label: 'Pine' },

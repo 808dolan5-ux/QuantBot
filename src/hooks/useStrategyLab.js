@@ -8,6 +8,7 @@ import { computeMetrics, downsample } from '@/lib/backtest/metrics';
 import { buildFixPrompt } from '@/lib/backtest/fixPrompt';
 import { createTestSession, saveRun } from '@/lib/backtest/persist';
 import { testSignals } from '@/lib/backtest/signals';
+import { runMonteCarlo } from '@/lib/backtest/monteCarlo';
 
 const WARMUP = 500;
 const { StrategyRun, DataUsage } = base44.entities;
@@ -76,15 +77,22 @@ export default function useStrategyLab(config) {
     const sigFailed = signals.results.filter((r) => r.status !== 'pass').length;
     add(sigFailed ? 'warn' : 'info', `Signal test: ${Object.entries(signals.counts).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 
+    setPhase('Running Monte Carlo robustness test...');
+    const mc = runMonteCarlo(sim.trades, config.balance);
+    add(mc && mc.score >= 50 ? 'info' : 'warn', mc
+      ? `Monte Carlo (${mc.iterations} runs): score ${mc.score}/100 (${mc.grade}), ${(mc.probProfit * 100).toFixed(0)}% profitable, 95th pct drawdown ${mc.dd95.toFixed(1)}%`
+      : 'Monte Carlo skipped: fewer than 5 trades.');
+
     setPhase('Saving run...');
     const version = (await StrategyRun.count({ bot_name: config.botName })) + 1;
-    const fixPrompt = buildFixPrompt({ version, windowText, metrics, results, log });
+    const fixPrompt = buildFixPrompt({ version, windowText, metrics, results, log, mc });
     const logText = log.map((e) => `[${e.level.toUpperCase()}] ${e.t ? new Date(e.t).toISOString().slice(0, 16) : ''} ${e.msg}`).join('\n').slice(0, 20000);
     const { saved, session: nextSession } = await saveRun(session || await createTestSession(config, ds), {
       bot_name: config.botName, version, target: config.target, model: config.model, symbol: ds.symbol,
       window_label: w.label, start: new Date(bars.time[w.from]).toISOString(), end: new Date(bars.time[w.to]).toISOString(),
       rules: config.rules, code: conv.code, sim_code: conv.sim_code, summary: conv.summary, results,
-      metrics: { ...metrics, profitFactor: Number.isFinite(metrics.profitFactor) ? metrics.profitFactor : null }, log: logText, fix_prompt: fixPrompt,
+      metrics: { ...metrics, profitFactor: Number.isFinite(metrics.profitFactor) ? metrics.profitFactor : null, mc: mc ? { ...mc, bands: undefined } : null },
+      log: logText, fix_prompt: fixPrompt,
     }, sim.trades);
     sessionsRef.current[nextSession.id] = nextSession;
 
@@ -95,6 +103,7 @@ export default function useStrategyLab(config) {
     return {
       id: saved.id, sessionId: nextSession.id, version, target: config.target, windowText, ...conv, results, metrics, log, fixPrompt,
       trades: sim.trades, equity: downsample(sim.equity), price: priceBars, balance: config.balance,
+      mc, contractSize: ds.contract_size || 100,
     };
   }
 

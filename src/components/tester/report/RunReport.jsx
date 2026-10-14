@@ -9,6 +9,8 @@ import TradesTable from './TradesTable';
 import RunLog from './RunLog';
 import RuleResults from '../RuleResults';
 import CodeOutput from '../CodeOutput';
+import MonteCarloCard from './MonteCarloCard';
+import LucidPanel from '../prop/LucidPanel';
 
 export default function RunReport({ run }) {
   return (
@@ -16,9 +18,11 @@ export default function RunReport({ run }) {
       <p className="text-xs text-muted-foreground">v{run.version} · {run.windowText}</p>
       <MetricsGrid m={run.metrics} />
       <Tabs defaultValue="overview">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="liquidity">Liquidity</TabsTrigger>
+          <TabsTrigger value="montecarlo">Monte Carlo{run.mc ? ` (${run.mc.grade})` : ''}</TabsTrigger>
+          <TabsTrigger value="lucid">Lucid Pro</TabsTrigger>
           <TabsTrigger value="trades">Trades ({run.trades.length})</TabsTrigger>
           <TabsTrigger value="log">Log ({run.log.length})</TabsTrigger>
           <TabsTrigger value="code">Code</TabsTrigger>
@@ -35,6 +39,8 @@ export default function RunReport({ run }) {
             <VolumeProfileChart price={run.price} />
           </div>
         </TabsContent>
+        <TabsContent value="montecarlo"><MonteCarloCard mc={run.mc} balance={run.balance} /></TabsContent>
+        <TabsContent value="lucid"><LucidPanel trades={run.trades} contractSize={run.contractSize} /></TabsContent>
         <TabsContent value="trades"><TradesTable trades={run.trades} /></TabsContent>
         <TabsContent value="log"><RunLog log={run.log} /></TabsContent>
         <TabsContent value="code" className="space-y-4">

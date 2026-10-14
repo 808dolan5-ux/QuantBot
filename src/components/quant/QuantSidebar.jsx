@@ -1,8 +1,9 @@
 import { Plus, X } from 'lucide-react';
 import GroupPills from './GroupPills';
 import ProfileFooter from './ProfileFooter';
+import SessionItem from './SessionItem';
 
-export default function QuantSidebar({ user, sessions, activeId, activeGroup, onSelect, onNew, onGroup, open, onClose }) {
+export default function QuantSidebar({ user, sessions, activeId, activeGroup, onSelect, onNew, onGroup, onRename, onMove, onDelete, open, onClose }) {
   return (
     <>
       {open && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={onClose} />}
@@ -22,13 +23,10 @@ export default function QuantSidebar({ user, sessions, activeId, activeGroup, on
         <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-0.5">
           {sessions.length === 0 && <p className="px-2 py-2 text-xs text-muted-foreground">No conversations yet.</p>}
           {sessions.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => onSelect(s.id)}
-              className={`w-full text-left truncate px-2 py-1.5 rounded-md text-sm ${s.id === activeId ? 'bg-sidebar-accent text-foreground' : 'text-sidebar-foreground/80 hover:bg-sidebar-accent'}`}
-            >
-              {s.title}
-            </button>
+            <SessionItem
+              key={s.id} session={s} active={s.id === activeId}
+              onSelect={onSelect} onRename={onRename} onMove={onMove} onDelete={onDelete}
+            />
           ))}
         </div>
         <ProfileFooter user={user} />

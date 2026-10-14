@@ -19,6 +19,8 @@ export const createSession = (title, group) =>
 
 export const setSessionGroup = (id, group) => ChatSession.update(id, { group });
 
+export const renameSession = (id, title) => ChatSession.update(id, { title });
+
 export const addUserMessage = (sessionId, content) =>
   ChatMessage.create({ session_id: sessionId, role: 'user', content });
 

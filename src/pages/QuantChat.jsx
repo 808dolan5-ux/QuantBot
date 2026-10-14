@@ -70,12 +70,19 @@ export default function QuantChat() {
     refreshSessions();
   };
 
-  const removeChat = async () => {
-    if (!window.confirm('Delete this conversation?')) return;
-    await api.deleteSession(activeId);
-    newChat();
+  const deleteChat = async (id) => {
+    await api.deleteSession(id);
+    if (id === activeId) newChat();
     refreshSessions();
   };
+
+  const removeChat = async () => {
+    if (!window.confirm('Delete this conversation?')) return;
+    deleteChat(activeId);
+  };
+
+  const renameChat = async (id, title) => { await api.renameSession(id, title); refreshSessions(); };
+  const moveChat = async (id, group) => { await api.setSessionGroup(id, group); refreshSessions(); };
 
   const firstName = (user?.full_name || 'Trader').split(' ')[0];
   const hasChat = activeId && (messages.length > 0 || thinking);
@@ -85,6 +92,7 @@ export default function QuantChat() {
       <QuantSidebar
         user={user} sessions={sessions} activeId={activeId} activeGroup={activeGroup}
         onSelect={openSession} onNew={newChat} onGroup={setActiveGroup}
+        onRename={renameChat} onMove={moveChat} onDelete={deleteChat}
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}
       />
       <main className="flex-1 flex flex-col min-w-0">

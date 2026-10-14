@@ -13,6 +13,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import QuantChat from '@/pages/QuantChat';
 import Settings from '@/pages/Settings';
+import StrategyTester from '@/pages/StrategyTester';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -48,6 +49,7 @@ const AuthenticatedApp = () => {
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/" element={<QuantChat />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/strategy-tester" element={<StrategyTester />} />
       </Route>
       {/* Add your page Route elements here */}
       <Route path="*" element={<PageNotFound />} />

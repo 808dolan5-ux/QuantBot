@@ -1,5 +1,6 @@
 export const MODELS = [
   { id: 'builtin', label: 'QuantBot (built-in)', needsKey: false },
+  { id: 'claude-opus-5', label: 'Claude Opus 5', needsKey: true },
   { id: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5', needsKey: true },
   { id: 'claude-opus-4-1', label: 'Claude Opus 4.1', needsKey: true },
   { id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5', needsKey: true },

@@ -1,4 +1,5 @@
-import { Plus, X } from 'lucide-react';
+import { Plus, X, FlaskConical } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import GroupPills from './GroupPills';
 import ProfileFooter from './ProfileFooter';
 import SessionItem from './SessionItem';
@@ -17,6 +18,10 @@ export default function QuantSidebar({ user, sessions, activeId, activeGroup, on
             <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center"><Plus className="w-4 h-4" /></span>
             New chat
           </button>
+          <Link to="/strategy-tester" className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent text-sm font-medium">
+            <span className="w-6 h-6 rounded-full bg-sidebar-accent flex items-center justify-center"><FlaskConical className="w-4 h-4 text-primary" /></span>
+            Strategy Tester
+          </Link>
         </div>
         <GroupPills active={activeGroup} onSelect={onGroup} />
         <div className="px-4 pt-3 pb-1 text-xs text-muted-foreground">Recents</div>

@@ -17,7 +17,7 @@ import ChartLoader from '@/components/quant/ChartLoader';
 export default function StrategyConverter() {
   const [cfg, setCfg] = useState({
     strategy: '', rules: '', target: 'MT5', model: 'claude-opus-5', windowId: '1w',
-    customFrom: '2026-01-01', customTo: '2026-03-31', botName: '', datasetId: '', balance: 10000,
+    customFrom: '2026-01-01', customTo: '2026-03-31', botName: '', datasetIds: DEFAULT_DATASET_IDS, balance: 10000,
   });
   const set = (key, value) => setCfg((c) => ({ ...c, [key]: value }));
   const [keyStatus, setKeyStatus] = useState(null);
@@ -29,7 +29,6 @@ export default function StrategyConverter() {
       set('model', defaultModel(status, user));
     });
   }, []);
-  useEffect(() => { if (!cfg.datasetId && lab.datasets[0]) set('datasetId', lab.datasets[0].id); }, [lab.datasets, cfg.datasetId]);
 
   const missing = missingKey(cfg.model, keyStatus);
   const needsKey = !!missing;

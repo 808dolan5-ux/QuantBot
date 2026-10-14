@@ -1,10 +1,10 @@
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import DatasetPicker from '@/components/tester/DatasetPicker';
 
 const fmt = (iso) => (iso ? iso.slice(0, 10) : '?');
 
 export default function TestSettings({ cfg, set, datasets }) {
-  const ds = datasets.find((d) => d.id === cfg.datasetId);
+  const sel = datasets.filter((d) => cfg.datasetIds.includes(d.id));
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -14,12 +14,7 @@ export default function TestSettings({ cfg, set, datasets }) {
         </label>
         <label className="space-y-1">
           <span className="text-xs text-muted-foreground">Market data</span>
-          <Select value={cfg.datasetId || undefined} onValueChange={(v) => set('datasetId', v)}>
-            <SelectTrigger className="bg-card"><SelectValue placeholder={datasets.length ? 'Pick a market' : 'No data yet. Add a file in Settings'} /></SelectTrigger>
-            <SelectContent>
-              {datasets.map((d) => <SelectItem key={d.id} value={d.id}>{d.symbol} {d.timeframe} ({d.source})</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <DatasetPicker datasets={datasets} value={cfg.datasetIds} onChange={(v) => set('datasetIds', v)} />
         </label>
         <label className="space-y-1">
           <span className="text-xs text-muted-foreground">Starting balance ($)</span>
@@ -33,7 +28,7 @@ export default function TestSettings({ cfg, set, datasets }) {
           <Input type="date" min="2024-01-01" value={cfg.customTo} onChange={(e) => set('customTo', e.target.value)} className="w-44 bg-card" />
         </div>
       )}
-      {ds && <p className="text-xs text-muted-foreground">{ds.symbol} data available {fmt(ds.start)} to {fmt(ds.end)} ({ds.bars?.toLocaleString()} bars). Unseen windows never go before 2024.</p>}
+      {sel.length > 0 && <p className="text-xs text-muted-foreground">Each market is tested separately: {sel.map((d) => `${d.symbol} ${d.timeframe} ${fmt(d.start)} to ${fmt(d.end)}`).join(' · ')}. Unseen windows never go before 2024.</p>}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { CLAUDE_MODELS, callClaude, getAnthropicKey } from '../../shared/claude.ts';
+import { SIGNAL_SPEC, SIGNAL_RULE } from '../../shared/signals.ts';
 
 const TARGETS = {
   MT5: 'a complete, compilable MetaTrader 5 Expert Advisor in strict MQL5 (#include <Trade\\Trade.mqh>, CTrade, unique magic number, SL and TP on every order, CopyBuffer for indicators, new-bar guard, no MQL4 functions)',
@@ -15,11 +16,13 @@ ctx fields:
 - ctx.state: plain object that persists between bars (store custom values, previous signals, daily P&L, etc.).
 - ctx.ta (value at the current bar, optional offset = bars back): ema(src,len,offset), sma(src,len,offset), rsi(src,len,offset), atr(len,offset), highest(src,len,offset), lowest(src,len,offset), stdev(src,len,offset). src must be ctx.close/ctx.open/ctx.high/ctx.low/ctx.volume. Values are NaN during warm-up.
 Return null (no action), {action:'buy'|'sell', lots, sl, tp} to open (sl/tp as absolute prices; lots sized from ctx.balance and the stop distance), {action:'close'}, or {action:'modify', sl, tp} to move stops (breakeven, trailing).
+Signals: every buy/sell must set BOTH sl and tp. Strategy-logic exits must return {action:'close'} so the tester records them as CLOSE, separate from TP and SL hits. The tester checks that BUY, SELL, CLOSE, TP and SL each fire.
 Must be plain ES2020, deterministic, no async, no external access.`;
 
 const SYSTEM = `You are QuantBot's strategy converter and rule auditor. Convert the trader's strategy into the requested platform, write a matching simulation for QuantBot's backtester, and audit the code against every rule the trader gave.
 - Output the FULL code file, never truncated, no placeholders.
 - ${SIM_CONTRACT}
+- The code must follow the DISTINCT SIGNALS standard given in the task, and the mandatory signal rule is always audited.
 - Test each rule strictly against the converted code: "pass" if enforced, "fail" if violated or ignored, "warn" if partly enforced or not verifiable from code alone.
 - Never invent profit, win rate or drawdown numbers: the simulator measures those.
 - If no rules are given, audit general robustness (stop loss present, position sizing, no martingale/grid, no repainting, correct order handling).
@@ -68,7 +71,7 @@ export default async function (req) {
     const marketInfo = market
       ? `MARKET: ${clip(market.symbol, 20)} ${clip(market.timeframe, 10)} bars, contract size ${Number(market.contract_size) || 100}, point ${Number(market.point) || 0.01}, starting balance ${Number(market.balance) || 10000}.`
       : '';
-    let task = `Convert this strategy into ${TARGETS[target]}.\n${marketInfo}\n\nSTRATEGY:\n${strategy}\n\nRULES TO TEST AGAINST:\n${rules?.trim() || '(none given)'}`;
+    let task = `Convert this strategy into ${TARGETS[target]}.\n${SIGNAL_SPEC[target]}\n${marketInfo}\n\nSTRATEGY:\n${strategy}\n\nRULES TO TEST AGAINST:\n1. (mandatory) ${SIGNAL_RULE}\n${rules?.trim() || '(no other rules given)'}`;
     if (previous) {
       task += `\n\nPREVIOUS VERSION CODE:\n${clip(previous.code, 60000)}\n\nPREVIOUS SIM CODE:\n${clip(previous.sim_code, 20000)}\n\nTEST LOG AND ISSUES TO FIX:\n${clip(previous.fix_prompt, 15000)}`;
     }

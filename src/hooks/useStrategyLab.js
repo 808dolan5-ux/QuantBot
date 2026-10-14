@@ -7,6 +7,7 @@ import { runInWorker } from '@/lib/backtest/runWorker';
 import { computeMetrics, downsample } from '@/lib/backtest/metrics';
 import { buildFixPrompt } from '@/lib/backtest/fixPrompt';
 import { createTestSession, saveRun } from '@/lib/backtest/persist';
+import { testSignals } from '@/lib/backtest/signals';
 
 const WARMUP = 500;
 const { StrategyRun, DataUsage } = base44.entities;
@@ -70,15 +71,19 @@ export default function useStrategyLab(config) {
     sim.log.forEach((e) => log.push(e));
     const metrics = computeMetrics(sim.trades, sim.equity, config.balance, ds.contract_size || 100);
     add(metrics.net >= 0 ? 'info' : 'warn', `Backtest: ${metrics.trades} trades, net ${metrics.net.toFixed(2)}, max DD ${metrics.maxDDPct.toFixed(2)}%`);
+    const signals = testSignals(sim.trades);
+    const results = [...conv.results, ...signals.results];
+    const sigFailed = signals.results.filter((r) => r.status !== 'pass').length;
+    add(sigFailed ? 'warn' : 'info', `Signal test: ${Object.entries(signals.counts).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 
     setPhase('Saving run...');
     const version = (await StrategyRun.count({ bot_name: config.botName })) + 1;
-    const fixPrompt = buildFixPrompt({ version, windowText, metrics, results: conv.results, log });
+    const fixPrompt = buildFixPrompt({ version, windowText, metrics, results, log });
     const logText = log.map((e) => `[${e.level.toUpperCase()}] ${e.t ? new Date(e.t).toISOString().slice(0, 16) : ''} ${e.msg}`).join('\n').slice(0, 20000);
     const { saved, session: nextSession } = await saveRun(session || await createTestSession(config, ds), {
       bot_name: config.botName, version, target: config.target, model: config.model, symbol: ds.symbol,
       window_label: w.label, start: new Date(bars.time[w.from]).toISOString(), end: new Date(bars.time[w.to]).toISOString(),
-      rules: config.rules, code: conv.code, sim_code: conv.sim_code, summary: conv.summary, results: conv.results,
+      rules: config.rules, code: conv.code, sim_code: conv.sim_code, summary: conv.summary, results,
       metrics: { ...metrics, profitFactor: Number.isFinite(metrics.profitFactor) ? metrics.profitFactor : null }, log: logText, fix_prompt: fixPrompt,
     }, sim.trades);
     sessionsRef.current[nextSession.id] = nextSession;
@@ -88,7 +93,7 @@ export default function useStrategyLab(config) {
       return { t: bars.time[j], open: bars.open[j], close: bars.close[j], high: bars.high[j], low: bars.low[j], volume: bars.volume[j] };
     });
     return {
-      id: saved.id, sessionId: nextSession.id, version, target: config.target, windowText, ...conv, metrics, log, fixPrompt,
+      id: saved.id, sessionId: nextSession.id, version, target: config.target, windowText, ...conv, results, metrics, log, fixPrompt,
       trades: sim.trades, equity: downsample(sim.equity), price: priceBars, balance: config.balance,
     };
   }

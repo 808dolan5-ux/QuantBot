@@ -41,7 +41,7 @@ export function runBacktest({ bars, startIndex, simCode, balance, contractSize, 
         if (pos && pos.side !== side) marketExit(i, 'reverse');
         if (!pos) {
           const entry = side === 'long' ? ask(i, o) : o;
-          pos = { side, entry, sl: pending.sl, tp: pending.tp, sl0: pending.sl, lots: pending.lots, entryTime: t, openIndex: i, mae: 0, mfe: 0 };
+          pos = { side, entry, sl: pending.sl, tp: pending.tp, sl0: pending.sl, tp0: pending.tp, lots: pending.lots, entryTime: t, openIndex: i, mae: 0, mfe: 0 };
           add('info', `Opened ${side} ${pending.lots} lots @ ${entry.toFixed(2)} SL ${pending.sl?.toFixed(2) ?? 'none'} TP ${pending.tp?.toFixed(2) ?? 'none'}`, t);
         }
       }

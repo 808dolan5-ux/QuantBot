@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, History, ArrowLeftRight } from 'lucide-react';
 import { MODELS } from '@/lib/models';
 import useScriptTester from '@/hooks/useScriptTester';
+import { DEFAULT_DATASET_IDS } from '@/lib/backtest/builtinData';
 import TesterControls from '@/components/scripttester/TesterControls';
 import ScriptCard from '@/components/scripttester/ScriptCard';
 import ScriptResults from '@/components/scripttester/ScriptResults';
@@ -11,9 +12,8 @@ import ChartLoader from '@/components/quant/ChartLoader';
 export default function StrategyTester() {
   const t = useScriptTester();
   const [chatId, setChatId] = useState('');
-  const [datasetId, setDatasetId] = useState('');
+  const [datasetIds, setDatasetIds] = useState(DEFAULT_DATASET_IDS);
   useEffect(() => { if (!chatId && t.chats[0]) setChatId(t.chats[0].id); }, [t.chats]);
-  useEffect(() => { if (!datasetId && t.datasets[0]) setDatasetId(t.datasets[0].id); }, [t.datasets]);
   const modelLabel = MODELS.find((m) => m.id === t.model)?.label;
 
   return (
@@ -32,8 +32,8 @@ export default function StrategyTester() {
         {!t.ready ? <div className="flex justify-center py-16"><ChartLoader className="w-20 h-12" /></div> : (
           <div className="space-y-2">
             <TesterControls
-              chats={t.chats} datasets={t.datasets} chatId={chatId} datasetId={datasetId}
-              onChat={setChatId} onDataset={setDatasetId} onRun={() => t.run(chatId, datasetId)} running={t.running}
+              chats={t.chats} datasets={t.datasets} chatId={chatId} datasetIds={datasetIds}
+              onChat={setChatId} onDatasets={setDatasetIds} onRun={() => t.run(chatId, datasetIds)} running={t.running}
             />
             <p className="text-xs text-muted-foreground px-1">
               Tests the newest script in the chat on the full history of the timeframe. Settings are built into the tester:
@@ -47,12 +47,13 @@ export default function StrategyTester() {
           </div>
         )}
         {t.error && <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">{t.error}</div>}
-        {t.result && !t.running && (
-          <>
-            <ScriptCard result={t.result} />
-            <ScriptResults result={t.result} />
-          </>
-        )}
+        {t.results.map((r) => (
+          <div key={r.ds.id} className="space-y-5">
+            <h2 className="font-heading text-base font-semibold">{r.ds.symbol} {r.ds.timeframe}</h2>
+            <ScriptCard result={r} />
+            <ScriptResults result={r} />
+          </div>
+        ))}
       </div>
     </div>
   );

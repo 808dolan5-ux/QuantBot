@@ -27,6 +27,26 @@ export function marketText(market) {
 export function parseJsonReply(text) {
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
-  if (start < 0 || end < start) throw new Error('The model did not return a readable report. Try again.');
-  return JSON.parse(text.slice(start, end + 1));
+  if (start < 0 || end < start) throw new Error('The model reply was cut off before the report finished. Try again.');
+  const body = text.slice(start, end + 1);
+  try {
+    return JSON.parse(body);
+  } catch {
+    // Models often put raw line breaks / tabs inside code strings; escape them and retry
+    let out = '', inStr = false, esc = false;
+    for (const ch of body) {
+      if (inStr && !esc && ch === '\n') out += '\\n';
+      else if (inStr && !esc && ch === '\r') out += '\\r';
+      else if (inStr && !esc && ch === '\t') out += '\\t';
+      else out += ch;
+      if (esc) esc = false;
+      else if (ch === '\\') esc = inStr;
+      else if (ch === '"') inStr = !inStr;
+    }
+    try {
+      return JSON.parse(out);
+    } catch {
+      throw new Error('The model reply was cut off or malformed. Try again.');
+    }
+  }
 }

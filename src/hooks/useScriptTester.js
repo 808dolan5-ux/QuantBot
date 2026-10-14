@@ -20,7 +20,7 @@ export default function useScriptTester() {
   const [ready, setReady] = useState(false);
   const [phase, setPhase] = useState('');
   const [error, setError] = useState('');
-  const [result, setResult] = useState(null);
+  const [results, setResults] = useState([]);
 
   useEffect(() => {
     Promise.all([base44.auth.me(), api.getKeyStatus(), loadDatasets()]).then(async ([user, status, ds]) => {
@@ -32,11 +32,19 @@ export default function useScriptTester() {
     });
   }, []);
 
-  async function run(chatId, datasetId) {
+  async function run(chatId, datasetIds) {
     setError('');
-    setResult(null);
+    setResults([]);
+    for (const ds of datasets.filter((d) => datasetIds.includes(d.id))) {
+      const r = await runOne(chatId, ds);
+      if (!r) break;
+      setResults((xs) => [...xs, r]);
+    }
+    setPhase('');
+  }
+
+  async function runOne(chatId, ds) {
     const chat = chats.find((c) => c.id === chatId);
-    const ds = datasets.find((d) => d.id === datasetId);
     const modelLabel = MODELS.find((m) => m.id === model)?.label;
     const log = [];
     const add = (level, msg) => log.push({ level, msg, t: Date.now() });
@@ -46,7 +54,7 @@ export default function useScriptTester() {
       if (!script) throw new Error(`No MT5 or Pine script in "${chat.title}" yet. Ask QuantBot to write one in that chat first.`);
       add('info', `Script "${chat.title}" (${script.language}) from the reply sent ${new Date(script.at).toLocaleString()}`);
 
-      setPhase('Loading market data...');
+      setPhase(`${ds.symbol}: loading market data...`);
       const bars = await loadBars(ds);
       const n = bars.time.length;
       const start = Math.min(WARMUP, n - 1);
@@ -72,12 +80,12 @@ export default function useScriptTester() {
       const period = { start: new Date(bars.time[start]).toISOString(), end: new Date(bars.time[n - 1]).toISOString() };
       const test = { name: chat.title, script, ds, model, balance: settings.balance, summary, rules, simCode, metrics, results: signals.results, ...period };
       const saved = await saveScriptTest({ ...test, logText: log.map(logLine).join('\n').slice(0, 20000) }, sim.trades);
-      setResult({ ...test, ...saved, modelLabel, log, trades: sim.trades, equity: downsample(sim.equity) });
+      return { ...test, ...saved, modelLabel, log, trades: sim.trades, equity: downsample(sim.equity) };
     } catch (e) {
-      setError(e.response?.data?.error || e.message);
+      setError(`${ds.symbol}: ${e.response?.data?.error || e.message}`);
+      return null;
     }
-    setPhase('');
   }
 
-  return { chats, datasets, model, ready, phase, error, result, running: !!phase, run };
+  return { chats, datasets, model, ready, phase, error, results, running: !!phase, run };
 }

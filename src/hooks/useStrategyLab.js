@@ -37,14 +37,12 @@ export default function useStrategyLab(config) {
     return { ...w, label: def.label, reused: def.id === 'custom' && overlapsSeen(bars.time, w, used) };
   }
 
-  async function runOnce(previous, session) {
-    const ds = datasets.find((d) => d.id === config.datasetId);
+  async function runOnce(previous, session, ds) {
     if (!config.botName.trim()) throw new Error('Give the bot a name so its unseen data can be tracked.');
-    if (!ds) throw new Error('Pick a market first.');
+    setPhase(`${ds.symbol}: loading market data...`);
     const log = [];
     const add = (level, msg) => log.push({ level, msg, t: Date.now() });
 
-    setPhase('Loading market data...');
     const bars = await loadBars(ds);
     const w = await pickWindow(ds, bars);
     const windowText = `${w.label}: ${fmtDate(bars.time[w.from])} to ${fmtDate(bars.time[w.to])} (${w.to - w.from + 1} bars, ${ds.symbol} ${ds.timeframe})`;
@@ -104,21 +102,33 @@ export default function useStrategyLab(config) {
     return {
       id: saved.id, sessionId: nextSession.id, version, target: config.target, windowText, ...conv, results, metrics, log, fixPrompt,
       trades: sim.trades, equity: downsample(sim.equity), price: priceBars, balance: config.balance,
-      mc, contractSize: ds.contract_size || 100,
+      mc, contractSize: ds.contract_size || 100, ds,
     };
   }
 
   async function execute(previous, iterations = 1) {
     setError('');
     stopRef.current = false;
-    let prev = previous;
+    const push = (run) => {
+      runsRef.current = [...runsRef.current, run];
+      setRuns(runsRef.current);
+      setActiveIdx(runsRef.current.length - 1);
+    };
     try {
-      for (let k = 0; k < iterations && !stopRef.current; k++) {
-        const run = await runOnce(prev, prev ? sessionsRef.current[prev.sessionId] : null);
-        runsRef.current = [...runsRef.current, run];
-        setRuns(runsRef.current);
-        setActiveIdx(runsRef.current.length - 1);
-        prev = run;
+      if (!previous) {
+        const picked = datasets.filter((d) => config.datasetIds.includes(d.id));
+        if (!picked.length) throw new Error('Pick at least one market.');
+        for (const ds of picked) {
+          if (stopRef.current) break;
+          push(await runOnce(null, null, ds));
+        }
+      } else {
+        let prev = previous;
+        for (let k = 0; k < iterations && !stopRef.current; k++) {
+          const run = await runOnce(prev, sessionsRef.current[prev.sessionId], prev.ds);
+          push(run);
+          prev = run;
+        }
       }
     } catch (e) {
       setError(e.response?.data?.error || e.message);

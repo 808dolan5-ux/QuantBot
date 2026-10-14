@@ -5,6 +5,7 @@ import * as api from '@/lib/quantApi';
 import { base44 } from '@/api/base44Client';
 import { missingKey, defaultModel } from '@/lib/models';
 import useStrategyLab from '@/hooks/useStrategyLab';
+import { DEFAULT_DATASET_IDS } from '@/lib/backtest/builtinData';
 import TesterToolbar from '@/components/tester/TesterToolbar';
 import TestSettings from '@/components/tester/TestSettings';
 import StrategyForm from '@/components/tester/StrategyForm';

@@ -15,7 +15,7 @@ export default function TestSettings({ cfg, set, datasets }) {
         <label className="space-y-1">
           <span className="text-xs text-muted-foreground">Market data</span>
           <Select value={cfg.datasetId || undefined} onValueChange={(v) => set('datasetId', v)}>
-            <SelectTrigger className="bg-card"><SelectValue placeholder={datasets.length ? 'Pick a market' : 'Loading...'} /></SelectTrigger>
+            <SelectTrigger className="bg-card"><SelectValue placeholder={datasets.length ? 'Pick a market' : 'No data yet. Add a file in Settings'} /></SelectTrigger>
             <SelectContent>
               {datasets.map((d) => <SelectItem key={d.id} value={d.id}>{d.symbol} {d.timeframe} ({d.source})</SelectItem>)}
             </SelectContent>

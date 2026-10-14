@@ -27,7 +27,7 @@ const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 const DialogContent = React.forwardRef(({ className, children, style, ...props }, ref) => {
-  const origin = React.useMemo(() => centeredOrigin(), []);
+  const [origin] = React.useState(() => centeredOrigin());
   return (
   <DialogPortal>
     <DialogOverlay />

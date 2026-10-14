@@ -34,5 +34,5 @@ export default function ProtectedRoute({ fallback = <DefaultFallback />, unauthe
     return unauthenticatedElement;
   }
 
-  return <PageTransition><Outlet /></PageTransition>;
+  return <PageTransition />;
 }

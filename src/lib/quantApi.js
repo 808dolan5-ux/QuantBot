@@ -40,7 +40,7 @@ export async function deleteSession(id) {
 
 export function exportMarkdown(title, messages) {
   const md = `# ${title}\n\n` + messages
-    .map((m) => `### ${m.role === 'user' ? 'Trader' : 'Quant AI'}\n\n${m.content}`)
+    .map((m) => `### ${m.role === 'user' ? 'Trader' : 'QuantBot'}\n\n${m.content}`)
     .join('\n\n---\n\n');
   const url = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
   const a = document.createElement('a');

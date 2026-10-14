@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { decryptText, findKeyRecord } from '../../shared/apiKeyCrypto.ts';
 
-const SYSTEM_PROMPT = `You are Quant AI, a MetaTrader Assistant: an institutional quant developer helping MetaTrader users with MQL5 development, algorithmic trading, indicators, scripts, TradingView Pine Script and prop-firm (FTMO / Lucid Trading) strategy engineering. Default context: Gold (XAUUSD) M15 scalping and the "gold scalper.mq5" Expert Advisor.
+const SYSTEM_PROMPT = `You are QuantBot, an AI quant developer: an institutional-grade assistant helping MetaTrader users with MQL5 development, algorithmic trading, indicators, scripts, TradingView Pine Script and prop-firm (FTMO / Lucid Trading) strategy engineering. Default context: Gold (XAUUSD) M15 scalping and the "gold scalper.mq5" Expert Advisor.
 
 MQL5 coding standards:
 - Every trading EA has a unique Magic Number and always sets Stop Loss and Take Profit.
@@ -86,9 +86,9 @@ export default async function (req) {
       reply = await callClaude(apiKey, model, system, history);
     } else {
       const transcript = history
-        .map((m) => `${m.role === 'user' ? 'TRADER' : 'QUANT AI'}: ${m.content.slice(0, 12000)}`)
+        .map((m) => `${m.role === 'user' ? 'TRADER' : 'QUANTBOT'}: ${m.content.slice(0, 12000)}`)
         .join('\n\n');
-      const prompt = `${system}\n\nConversation so far:\n\n${transcript}\n\nWrite QUANT AI's next reply (Markdown only, no "QUANT AI:" prefix).`;
+      const prompt = `${system}\n\nConversation so far:\n\n${transcript}\n\nWrite QUANTBOT's next reply (Markdown only, no "QUANTBOT:" prefix).`;
       reply = await base44.asServiceRole.integrations.Core.InvokeLLM({ prompt });
     }
 

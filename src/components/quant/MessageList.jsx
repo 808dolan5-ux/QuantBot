@@ -16,7 +16,7 @@ export default function MessageList({ messages, thinking }) {
         {thinking && (
           <div className="flex items-center gap-3 text-muted-foreground text-sm">
             <ChartLoader />
-            Quant AI is analyzing...
+            QuantBot is analyzing...
           </div>
         )}
         <div ref={endRef} />

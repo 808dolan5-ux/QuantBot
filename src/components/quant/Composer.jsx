@@ -22,7 +22,7 @@ export default function Composer({ onSend, disabled, style, onStyleChange, model
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
-          placeholder="Reply to Quant AI..."
+          placeholder="Reply to QuantBot..."
           rows={2}
           className="w-full resize-none bg-transparent px-4 pt-4 text-[15px] outline-none placeholder:text-muted-foreground max-h-60"
         />

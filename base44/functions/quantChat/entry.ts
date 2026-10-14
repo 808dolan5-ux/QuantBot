@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { providerOf, toTurns, callUserModel } from '../../shared/llm.ts';
 import { SIGNAL_SPEC } from '../../shared/signals.ts';
+import { QUANT_PLAYBOOK } from '../../shared/quantKnowledge.ts';
 
 const SYSTEM_PROMPT = `You are QuantBot, an AI quant developer: an institutional-grade assistant helping MetaTrader users with MQL5 development, algorithmic trading, indicators, scripts, TradingView Pine Script and prop-firm (FTMO / Lucid Trading) strategy engineering. Default context: Gold (XAUUSD) M15 scalping and the "gold scalper.mq5" Expert Advisor.
 
@@ -22,7 +23,13 @@ Safety: never present martingale, grid or high-leverage averaging as risk-free. 
 
 What to use:
 - MT5 work: strict MQL5 only (CTrade, CopyBuffer, SymbolInfoDouble). Pine work: Pine Script v5 only.
-- Backtesting: send the trader to QuantBot's Strategy Tester page. It converts a strategy to MT5 or Pine, simulates it on stored candle data (currently XAUUSD M15 from MT5, Jan to Oct 2026), and only tests each bot on data that bot has never seen (1 day / 1 week / 1 month / 1 year unseen, or a custom range). It logs every run and can auto-fix and retest a new version.
+- Backtesting: QuantBot's Strategy Tester tests the newest script in this chat: the trader picks this chat and a timeframe, nothing else. The Strategy Converter converts any strategy to MT5 or Pine, tests it only on data that bot has never seen, and can auto-fix and retest new versions.
+- New bots and improvements: automatically build in the best-fit methods from the QUANT PLAYBOOK (default: ICT confluence entries plus its risk and management rules). Do not ask which methods to use.
+
+Script delivery (the Strategy Tester reads your newest reply in this chat):
+- Once a script exists in this chat, EVERY reply must contain the complete current script in exactly one fenced code block (\`\`\`mql5 or \`\`\`pine), even for a one-line change or a question about it. Never send partial code, diffs or snippets of the script.
+- The first line inside that code block is a name comment: // Script: <Name> (2-5 words, e.g. // Script: Gold ICT Silver Bullet). Keep the same name for every version of the script unless the trader renames it. This name becomes the chat title.
+- Keep every setting as an input with a sensible default so the tester can run the script as-is.
 - Do not use: MQL4, Pine v4 or older, martingale, grid, or averaging down without a hard stop.
 
 Honesty: in this chat you cannot compile files, run code, or read the trader's market data. Never invent backtest results or prices.
@@ -56,9 +63,14 @@ export default async function (req) {
     }
 
     const page = await base44.entities.ChatMessage.filter({ session_id }, { sort: '-created_date', limit: 20 });
-    const history = (page.items ?? page).slice().reverse();
+    const recent = (page.items ?? page).slice().reverse();
+    // Every reply carries the full script, so only the newest assistant reply keeps its code
+    const lastAssistant = recent.map((m) => m.role).lastIndexOf('assistant');
+    const history = recent.map((m, k) => (m.role === 'assistant' && k !== lastAssistant
+      ? { ...m, content: m.content.replace(/```[\s\S]*?```/g, '```\n[earlier version of the script omitted, the newest version is in a later reply]\n```') }
+      : m));
 
-    const system = `${SYSTEM_PROMPT}\n${PROJECT_HINTS[session.group] || ''}\n${STYLE_HINTS[style] || STYLE_HINTS.Concise}\nThe trader's name is ${user.full_name || 'Trader'}.`;
+    const system = `${SYSTEM_PROMPT}\n\n${QUANT_PLAYBOOK}\n\n${PROJECT_HINTS[session.group] || ''}\n${STYLE_HINTS[style] || STYLE_HINTS.Concise}\nThe trader's name is ${user.full_name || 'Trader'}.`;
 
     let reply;
     if (useOwnKey) {
@@ -72,7 +84,12 @@ export default async function (req) {
     }
 
     const message = await base44.entities.ChatMessage.create({ session_id, role: 'assistant', content: String(reply) });
-    await base44.entities.ChatSession.update(session_id, { last_message_at: new Date().toISOString() });
+    // The chat is named after the script: the "// Script: <Name>" line in the reply's code
+    const scriptName = String(reply).match(/^[ \t]*\/\/[ \t]*Script:[ \t]*(.{2,80}?)[ \t]*$/m)?.[1];
+    await base44.entities.ChatSession.update(session_id, {
+      last_message_at: new Date().toISOString(),
+      ...(scriptName && scriptName !== session.title ? { title: scriptName } : {}),
+    });
 
     return Response.json({ message });
   } catch (error) {

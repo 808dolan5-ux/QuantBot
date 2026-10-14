@@ -14,6 +14,7 @@ import ResetPassword from '@/pages/ResetPassword';
 import QuantChat from '@/pages/QuantChat';
 import Settings from '@/pages/Settings';
 import StrategyTester from '@/pages/StrategyTester';
+import StrategyConverter from '@/pages/StrategyConverter';
 import TestHistory from '@/pages/TestHistory';
 import PnlCalendar from '@/pages/PnlCalendar';
 // Add page imports here
@@ -52,6 +53,7 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<QuantChat />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/strategy-tester" element={<StrategyTester />} />
+        <Route path="/strategy-converter" element={<StrategyConverter />} />
         <Route path="/test-history" element={<TestHistory />} />
         <Route path="/pnl" element={<PnlCalendar />} />
       </Route>

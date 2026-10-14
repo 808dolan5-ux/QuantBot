@@ -25,7 +25,7 @@ export default function DefaultModelsCard() {
   return (
     <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
       <div>
-        <h3 className="font-medium">Strategy Tester default model</h3>
+        <h3 className="font-medium">Tester & converter default model</h3>
         <p className="text-xs text-muted-foreground">Your Claude model is used when an Anthropic key is linked; your Gemini model when only a Google key is linked.</p>
       </div>
       {!user ? <ChartLoader className="w-10 h-6" /> : FIELDS.map(({ provider, field }) => (

@@ -9,6 +9,7 @@ import { buildFixPrompt } from '@/lib/backtest/fixPrompt';
 import { createTestSession, saveRun } from '@/lib/backtest/persist';
 import { testSignals } from '@/lib/backtest/signals';
 import { runMonteCarlo } from '@/lib/backtest/monteCarlo';
+import { marketStats } from '@/lib/backtest/marketStats';
 
 const WARMUP = 500;
 const { StrategyRun, DataUsage } = base44.entities;
@@ -53,7 +54,7 @@ export default function useStrategyLab(config) {
     const modelLabel = MODELS.find((m) => m.id === config.model)?.label;
     setPhase(previous ? `Fixing v${previous.version} with ${modelLabel}...` : `Converting to ${config.target} with ${modelLabel}...`);
     const t0 = Date.now();
-    const market = { symbol: ds.symbol, timeframe: ds.timeframe, contract_size: ds.contract_size, point: ds.point, balance: config.balance };
+    const market = { symbol: ds.symbol, timeframe: ds.timeframe, contract_size: ds.contract_size, point: ds.point, balance: config.balance, stats: marketStats(bars) };
     const res = await base44.functions.invoke('strategyTester', {
       strategy: config.strategy, rules: config.rules, target: config.target, model: config.model, market,
       previous: previous && { code: previous.code, sim_code: previous.sim_code, fix_prompt: previous.fixPrompt },

@@ -17,6 +17,7 @@ import StrategyTester from '@/pages/StrategyTester';
 import StrategyConverter from '@/pages/StrategyConverter';
 import TestHistory from '@/pages/TestHistory';
 import PnlCalendar from '@/pages/PnlCalendar';
+import Accounts from '@/pages/Accounts';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -56,6 +57,7 @@ const AuthenticatedApp = () => {
         <Route path="/strategy-converter" element={<StrategyConverter />} />
         <Route path="/test-history" element={<TestHistory />} />
         <Route path="/pnl" element={<PnlCalendar />} />
+        <Route path="/accounts" element={<Accounts />} />
       </Route>
       {/* Add your page Route elements here */}
       <Route path="*" element={<PageNotFound />} />

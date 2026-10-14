@@ -8,7 +8,7 @@ export async function loadDatasets() {
 }
 
 // Parses MT5 exports (<DATE>\t<TIME>\t<OPEN>...) and TradingView CSV (time,open,high,low,close,Volume)
-function parse(text) {
+export function parseCandles(text) {
   const lines = text.trim().split(/\r?\n/);
   const mt5 = lines[0].includes('<DATE>');
   const rows = lines.slice(1);
@@ -32,7 +32,7 @@ function parse(text) {
 export async function loadBars(dataset) {
   if (!cache[dataset.id]) {
     const { signed_url } = await base44.integrations.Core.CreateFileSignedUrl({ file_uri: dataset.file_uri, expires_in: 600 });
-    cache[dataset.id] = parse(await (await fetch(signed_url)).text());
+    cache[dataset.id] = parseCandles(await (await fetch(signed_url)).text());
   }
   return cache[dataset.id];
 }

@@ -3,8 +3,11 @@ export const PROVIDERS = {
   google: { name: 'Google (Gemini)', short: 'Google Gemini', family: 'Gemini', prefix: 'AIza' },
 };
 
+import { IS_LOCAL } from '@/desktop/isLocal';
+
 export const MODELS = [
-  { id: 'builtin', label: 'QuantBot (built-in)', provider: null },
+  // The desktop app has no hosted model: "builtin" there runs your default model with your own key
+  { id: 'builtin', label: IS_LOCAL ? 'Auto (your default model)' : 'QuantBot (built-in)', provider: null },
   { id: 'claude-opus-5', label: 'Claude Opus 5', provider: 'anthropic' },
   { id: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5', provider: 'anthropic' },
   { id: 'claude-opus-4-1', label: 'Claude Opus 4.1', provider: 'anthropic' },

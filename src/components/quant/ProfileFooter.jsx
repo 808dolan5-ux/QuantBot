@@ -1,6 +1,7 @@
 import { LogOut, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { IS_LOCAL } from '@/desktop/isLocal';
 
 export default function ProfileFooter({ user }) {
   const name = user?.full_name || 'Trader';
@@ -17,9 +18,11 @@ export default function ProfileFooter({ user }) {
         <Link to="/settings" title="Settings" className="p-2 rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">
           <Settings className="w-4 h-4" />
         </Link>
-        <button onClick={() => base44.auth.logout('/login')} title="Log out" className="p-2 rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">
-          <LogOut className="w-4 h-4" />
-        </button>
+        {!IS_LOCAL && (
+          <button onClick={() => base44.auth.logout('/login')} title="Log out" className="p-2 rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">
+            <LogOut className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import HomeGreeting from '@/components/quant/HomeGreeting';
 import MessageList from '@/components/quant/MessageList';
 import Composer from '@/components/quant/Composer';
 import NoKeyBanner from '@/components/quant/NoKeyBanner';
+import MessageQueue from '@/components/quant/MessageQueue';
 
 export default function QuantChat() {
   const { toast } = useToast();
@@ -18,7 +19,8 @@ export default function QuantChat() {
   const [activeId, setActiveId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [thinking, setThinking] = useState(false);
-  const [style, setStyle] = useState('Normal');
+  const [style, setStyle] = useState('Concise');
+  const [queue, setQueue] = useState([]);
   const [model, setModel] = useState(() => localStorage.getItem('quant_model') || 'builtin');
   const [keyStatus, setKeyStatus] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -37,14 +39,16 @@ export default function QuantChat() {
   const changeModel = (m) => { setModel(m); localStorage.setItem('quant_model', m); };
 
   const openSession = async (id) => {
+    setQueue([]);
     setActiveId(id);
     setSidebarOpen(false);
     setMessages(await api.loadMessages(id));
   };
 
-  const newChat = () => { setActiveId(null); setMessages([]); setSidebarOpen(false); };
+  const newChat = () => { setQueue([]); setActiveId(null); setMessages([]); setSidebarOpen(false); };
 
   const send = async (text) => {
+    setThinking(true);
     let id = activeId;
     if (!id) {
       const s = await api.createSession(text.slice(0, 60), activeGroup);
@@ -54,7 +58,6 @@ export default function QuantChat() {
     }
     const userMsg = await api.addUserMessage(id, text);
     setMessages((m) => [...m, userMsg]);
-    setThinking(true);
     try {
       const reply = await api.askQuantAI(id, style, model);
       setMessages((m) => [...m, reply]);
@@ -64,6 +67,19 @@ export default function QuantChat() {
     setThinking(false);
     refreshSessions();
   };
+
+  // Messages sent while QuantBot is replying wait in the queue and go out one at a time
+  const submit = (text) => {
+    if (thinking) setQueue((q) => [...q, { id: `${Date.now()}-${Math.random()}`, text }]);
+    else send(text);
+  };
+
+  useEffect(() => {
+    if (thinking || !queue.length) return;
+    const [next, ...rest] = queue;
+    setQueue(rest);
+    send(next.text);
+  }, [thinking, queue]);
 
   const changeGroup = async (group) => {
     await api.setSessionGroup(activeId, group);
@@ -103,8 +119,9 @@ export default function QuantChat() {
         />
         {hasChat ? <MessageList messages={messages} thinking={thinking} /> : <HomeGreeting name={firstName} />}
         {needsKey && <NoKeyBanner onSaved={setKeyStatus} />}
+        <MessageQueue queue={queue} onRemove={(id) => setQueue((q) => q.filter((x) => x.id !== id))} />
         <Composer
-          onSend={send} disabled={thinking || needsKey}
+          onSend={submit} disabled={needsKey}
           style={style} onStyleChange={setStyle} model={model} onModelChange={changeModel}
         />
       </main>

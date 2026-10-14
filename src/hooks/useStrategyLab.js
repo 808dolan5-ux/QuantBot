@@ -1,0 +1,122 @@
+import { useEffect, useRef, useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { MODELS } from '@/lib/models';
+import { loadDatasets, loadBars, sliceBars } from '@/lib/backtest/data';
+import { WINDOWS, findUnseenWindow, customWindow, overlapsSeen, fmtDate } from '@/lib/backtest/windows';
+import { runInWorker } from '@/lib/backtest/runWorker';
+import { computeMetrics, downsample } from '@/lib/backtest/metrics';
+import { buildFixPrompt } from '@/lib/backtest/fixPrompt';
+
+const WARMUP = 500;
+const { StrategyRun, DataUsage } = base44.entities;
+
+export default function useStrategyLab(config) {
+  const [datasets, setDatasets] = useState([]);
+  const [runs, setRuns] = useState([]);
+  const [activeIdx, setActiveIdx] = useState(-1);
+  const [phase, setPhase] = useState('');
+  const [error, setError] = useState('');
+  const stopRef = useRef(false);
+  const runsRef = useRef([]);
+
+  useEffect(() => { loadDatasets().then(setDatasets); }, []);
+
+  async function pickWindow(ds, bars) {
+    const page = await DataUsage.filter({ bot_name: config.botName, symbol: ds.symbol }, { limit: 500 });
+    const used = page.items.map((u) => ({ start: Date.parse(u.start), end: Date.parse(u.end) }));
+    const def = WINDOWS.find((w) => w.id === config.windowId);
+    const w = def.id === 'custom'
+      ? customWindow(bars.time, config.customFrom, config.customTo)
+      : findUnseenWindow(bars.time, used, def.ms);
+    if (!w) throw new Error(def.id === 'custom' ? 'No bars in that date range.' : `No ${def.label} window left for "${config.botName}" on ${ds.symbol} (data runs ${fmtDate(bars.time[0])} to ${fmtDate(bars.time[bars.time.length - 1])}).`);
+    return { ...w, label: def.label, reused: def.id === 'custom' && overlapsSeen(bars.time, w, used) };
+  }
+
+  async function runOnce(previous) {
+    const ds = datasets.find((d) => d.id === config.datasetId);
+    if (!config.botName.trim()) throw new Error('Give the bot a name so its unseen data can be tracked.');
+    if (!ds) throw new Error('Pick a market first.');
+    const log = [];
+    const add = (level, msg) => log.push({ level, msg, t: Date.now() });
+
+    setPhase('Loading market data...');
+    const bars = await loadBars(ds);
+    const w = await pickWindow(ds, bars);
+    const windowText = `${w.label}: ${fmtDate(bars.time[w.from])} to ${fmtDate(bars.time[w.to])} (${w.to - w.from + 1} bars, ${ds.symbol} ${ds.timeframe})`;
+    add('info', `Test window ${windowText}`);
+    if (w.reused) add('warn', 'Part of this custom range was already seen by this bot.');
+
+    const modelLabel = MODELS.find((m) => m.id === config.model)?.label;
+    setPhase(previous ? `Fixing v${previous.version} with ${modelLabel}...` : `Converting to ${config.target} with ${modelLabel}...`);
+    const t0 = Date.now();
+    const market = { symbol: ds.symbol, timeframe: ds.timeframe, contract_size: ds.contract_size, point: ds.point, balance: config.balance };
+    const res = await base44.functions.invoke('strategyTester', {
+      strategy: config.strategy, rules: config.rules, target: config.target, model: config.model, market,
+      previous: previous && { code: previous.code, sim_code: previous.sim_code, fix_prompt: previous.fixPrompt },
+    });
+    const conv = res.data;
+    add('info', `${previous ? `Fixed v${previous.version}` : 'Converted'} with ${modelLabel} in ${Math.round((Date.now() - t0) / 1000)}s`);
+    const failed = conv.results.filter((r) => r.status !== 'pass').length;
+    add(failed ? 'warn' : 'info', `Rule test: ${conv.results.length - failed}/${conv.results.length} passed`);
+
+    setPhase('Simulating trades...');
+    const from = Math.max(0, w.from - WARMUP);
+    const sim = await runInWorker({
+      bars: sliceBars(bars, from, w.to), startIndex: w.from - from, simCode: conv.sim_code,
+      balance: config.balance, contractSize: ds.contract_size || 100, point: ds.point || 0.01,
+    });
+    sim.log.forEach((e) => log.push(e));
+    const metrics = computeMetrics(sim.trades, sim.equity, config.balance, ds.contract_size || 100);
+    add(metrics.net >= 0 ? 'info' : 'warn', `Backtest: ${metrics.trades} trades, net ${metrics.net.toFixed(2)}, max DD ${metrics.maxDDPct.toFixed(2)}%`);
+
+    setPhase('Saving run...');
+    const version = (await StrategyRun.count({ bot_name: config.botName })) + 1;
+    const fixPrompt = buildFixPrompt({ version, windowText, metrics, results: conv.results, log });
+    const logText = log.map((e) => `[${e.level.toUpperCase()}] ${e.t ? new Date(e.t).toISOString().slice(0, 16) : ''} ${e.msg}`).join('\n').slice(0, 20000);
+    const saved = await StrategyRun.create({
+      bot_name: config.botName, version, target: config.target, model: config.model, symbol: ds.symbol,
+      window_label: w.label, start: new Date(bars.time[w.from]).toISOString(), end: new Date(bars.time[w.to]).toISOString(),
+      rules: config.rules, code: conv.code, sim_code: conv.sim_code, summary: conv.summary, results: conv.results,
+      metrics: { ...metrics, profitFactor: Number.isFinite(metrics.profitFactor) ? metrics.profitFactor : null }, log: logText, fix_prompt: fixPrompt,
+    });
+    await DataUsage.create({ bot_name: config.botName, symbol: ds.symbol, start: saved.start, end: saved.end, run_id: saved.id });
+
+    const priceBars = Array.from({ length: w.to - w.from + 1 }, (_, k) => {
+      const j = w.from + k;
+      return { t: bars.time[j], open: bars.open[j], close: bars.close[j], high: bars.high[j], low: bars.low[j], volume: bars.volume[j] };
+    });
+    return {
+      id: saved.id, version, target: config.target, windowText, ...conv, metrics, log, fixPrompt,
+      trades: sim.trades, equity: downsample(sim.equity), price: priceBars, balance: config.balance,
+    };
+  }
+
+  async function execute(previous, iterations = 1) {
+    setError('');
+    stopRef.current = false;
+    let prev = previous;
+    try {
+      for (let k = 0; k < iterations && !stopRef.current; k++) {
+        const run = await runOnce(prev);
+        runsRef.current = [...runsRef.current, run];
+        setRuns(runsRef.current);
+        setActiveIdx(runsRef.current.length - 1);
+        prev = run;
+      }
+    } catch (e) {
+      setError(e.response?.data?.error || e.message);
+    }
+    setPhase('');
+  }
+
+  const updateFixPrompt = (idx, text) => {
+    runsRef.current = runsRef.current.map((x, k) => (k === idx ? { ...x, fixPrompt: text } : x));
+    setRuns(runsRef.current);
+  };
+
+  return {
+    datasets, runs, activeIdx, setActiveIdx, phase, error, running: !!phase,
+    run: () => execute(null), fix: (run, iterations) => execute(run, iterations),
+    stop: () => { stopRef.current = true; }, updateFixPrompt,
+  };
+}

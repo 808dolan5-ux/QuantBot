@@ -3,7 +3,7 @@ import { ArrowUp } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MODELS } from '@/lib/models';
 
-const STYLES = ['Normal', 'Concise', 'Explanatory', 'Formal'];
+const STYLES = ['Concise', 'Code only'];
 const triggerCls = 'h-8 w-auto gap-2 border-border bg-transparent text-xs text-muted-foreground';
 
 export default function Composer({ onSend, disabled, style, onStyleChange, model, onModelChange }) {

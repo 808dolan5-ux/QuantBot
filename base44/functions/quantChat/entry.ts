@@ -15,15 +15,18 @@ Quant principles: POC / VAH / VAL as fair value and boundaries, GEX regimes, CVD
 
 Safety: never present martingale, grid or high-leverage averaging as risk-free. Code needs backtesting and demo validation; past results do not guarantee live profit.
 
-Honesty: in this web app you cannot run the MT5 Strategy Tester, compile files, or read the trader's market data. Never invent backtest results or prices. If asked to backtest, explain how to run it in MT5 and what to look for.
+What to use:
+- MT5 work: strict MQL5 only (CTrade, CopyBuffer, SymbolInfoDouble). Pine work: Pine Script v5 only.
+- Backtesting: send the trader to QuantBot's Strategy Tester page. It converts a strategy to MT5 or Pine, simulates it on stored candle data (currently XAUUSD M15 from MT5, Jan to Oct 2026), and only tests each bot on data that bot has never seen (1 day / 1 week / 1 month / 1 year unseen, or a custom range). It logs every run and can auto-fix and retest a new version.
+- Do not use: MQL4, Pine v4 or older, martingale, grid, or averaging down without a hard stop.
 
-Style: speak directly to the trader, concise and high value (2-4 sentences or bullets unless code is requested). No prompt templates, questionnaires or bracketed fill-in forms. Use Markdown, with code in fenced blocks (\`\`\`mql5 or \`\`\`pine).`;
+Honesty: in this chat you cannot compile files, run code, or read the trader's market data. Never invent backtest results or prices.
+
+Style: speak directly to the trader. No prompt templates, questionnaires or bracketed fill-in forms. Use Markdown, with code in fenced blocks (\`\`\`mql5 or \`\`\`pine).`;
 
 const STYLE_HINTS = {
-  Normal: '',
-  Concise: 'Reply style: very short and punchy.',
-  Explanatory: 'Reply style: explain the reasoning step by step.',
-  Formal: 'Reply style: formal, professional tone.',
+  Concise: 'Reply style: concise. Short, direct and high value: a few sentences or bullets, plus complete code when code is needed.',
+  'Code only': 'Reply style: code only. Reply with only the complete code in a single fenced block. No explanation before or after it; put any essential notes as code comments.',
 };
 
 const PROJECT_HINTS = {
@@ -62,7 +65,7 @@ export default async function (req) {
     const page = await base44.entities.ChatMessage.filter({ session_id }, { sort: '-created_date', limit: 20 });
     const history = (page.items ?? page).slice().reverse();
 
-    const system = `${SYSTEM_PROMPT}\n${PROJECT_HINTS[session.group] || ''}\n${STYLE_HINTS[style] || ''}\nThe trader's name is ${user.full_name || 'Trader'}.`;
+    const system = `${SYSTEM_PROMPT}\n${PROJECT_HINTS[session.group] || ''}\n${STYLE_HINTS[style] || STYLE_HINTS.Concise}\nThe trader's name is ${user.full_name || 'Trader'}.`;
 
     let reply;
     if (useClaude) {

@@ -3,68 +3,75 @@ import { base44 } from '@/api/base44Client';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { FolderOpen, FileUp } from 'lucide-react';
 import Field from '@/components/accounts/Field';
-import { parseCandles } from '@/lib/backtest/data';
-
-// XAUUSD_M15_2024.csv -> XAUUSD / M15
-function guess(name) {
-  const m = name.toUpperCase().match(/^([A-Z0-9.]+?)[_\- ]+(M\d+|H\d+|D1|W1|MN1)\b/);
-  return m ? { symbol: m[1], timeframe: m[2] } : { symbol: name.replace(/\.[^.]+$/, '').toUpperCase(), timeframe: '' };
-}
+import MarketFileRow from '@/components/settings/MarketFileRow';
+import { readCandleFile } from '@/lib/backtest/readCandleFile';
 
 export default function MarketDataDialog({ onClose, onSaved }) {
-  const [file, setFile] = useState(null);
-  const [info, setInfo] = useState(null);
-  const [form, setForm] = useState({ symbol: '', timeframe: '', contract_size: '100', point: '0.01' });
+  const [items, setItems] = useState([]);
+  const [shared, setShared] = useState({ contract_size: '100', point: '0.01' });
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState('');
   const [error, setError] = useState('');
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const pick = async (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const text = await f.text();
-    const bars = parseCandles(text);
-    const n = bars.time.length;
-    const ok = n > 0 && !Number.isNaN(bars.time[0]) && !Number.isNaN(bars.time[n - 1]);
-    setError(ok ? '' : 'Could not read candles from this file. Use an MT5 or TradingView CSV export.');
-    setFile(ok ? f : null);
-    setInfo(ok ? { source: text.slice(0, 200).includes('<DATE>') ? 'MT5' : 'TradingView', bars: n, start: new Date(bars.time[0]).toISOString(), end: new Date(bars.time[n - 1]).toISOString() } : null);
-    if (ok) setForm((s) => ({ ...s, ...guess(f.name) }));
+    const files = [...(e.target.files || [])].filter((f) => /\.(csv|txt)$/i.test(f.name));
+    e.target.value = '';
+    if (!files.length) return setError('No CSV files found.');
+    setError('');
+    setProgress('Reading files…');
+    const read = await Promise.all(files.map(readCandleFile));
+    setProgress('');
+    setItems(read);
   };
+
+  const update = (i, patch) => setItems((xs) => xs.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const valid = items.filter((x) => x.info && x.symbol.trim() && x.timeframe.trim());
 
   const save = async () => {
     setBusy(true);
     try {
-      const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
-      await base44.entities.MarketData.create({
-        ...info, file_uri, symbol: form.symbol.trim().toUpperCase(), timeframe: form.timeframe.trim().toUpperCase(),
-        contract_size: Number(form.contract_size) || 100, point: Number(form.point) || 0.01,
-      });
+      for (let i = 0; i < valid.length; i++) {
+        const x = valid[i];
+        setProgress(`Saving ${i + 1} of ${valid.length}…`);
+        const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file: x.file });
+        await base44.entities.MarketData.create({
+          ...x.info, file_uri, symbol: x.symbol.trim().toUpperCase(), timeframe: x.timeframe.trim().toUpperCase(),
+          contract_size: Number(shared.contract_size) || 100, point: Number(shared.point) || 0.01,
+        });
+      }
       onSaved();
     } catch (err) {
       setError(err.message);
       setBusy(false);
+      setProgress('');
     }
   };
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader><DialogTitle>Add candle file</DialogTitle></DialogHeader>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader><DialogTitle>Add candle data</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <Field label="MT5 or TradingView CSV export"><Input type="file" accept=".csv,.txt" onChange={pick} /></Field>
-          {info && <p className="text-xs text-muted-foreground">{info.source} · {info.bars.toLocaleString()} bars · {info.start.slice(0, 10)} to {info.end.slice(0, 10)}</p>}
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Symbol"><Input value={form.symbol} onChange={set('symbol')} placeholder="XAUUSD" /></Field>
-            <Field label="Timeframe"><Input value={form.timeframe} onChange={set('timeframe')} placeholder="M15" /></Field>
-            <Field label="Contract size" hint="Units per 1.0 lot"><Input value={form.contract_size} onChange={set('contract_size')} /></Field>
-            <Field label="Point" hint="Price of 1 point"><Input value={form.point} onChange={set('point')} /></Field>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" asChild><label className="cursor-pointer"><FolderOpen /> Pick folder<input type="file" webkitdirectory="" directory="" multiple hidden onChange={pick} /></label></Button>
+            <Button variant="outline" asChild><label className="cursor-pointer"><FileUp /> Pick files<input type="file" accept=".csv,.txt" multiple hidden onChange={pick} /></label></Button>
           </div>
+          {items.length > 0 && (
+            <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+              {items.map((x, i) => <MarketFileRow key={i} item={x} onChange={(p) => update(i, p)} />)}
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Contract size" hint="Units per 1.0 lot, all files"><Input value={shared.contract_size} onChange={(e) => setShared((s) => ({ ...s, contract_size: e.target.value }))} /></Field>
+            <Field label="Point" hint="Price of 1 point, all files"><Input value={shared.point} onChange={(e) => setShared((s) => ({ ...s, point: e.target.value }))} /></Field>
+          </div>
+          {progress && <p className="text-xs text-muted-foreground">{progress}</p>}
           {error && <p className="text-xs text-red-400">{error}</p>}
         </div>
         <DialogFooter>
-          <Button onClick={save} disabled={!file || !form.symbol.trim() || !form.timeframe.trim() || busy}>{busy ? 'Saving…' : 'Save'}</Button>
+          <Button onClick={save} disabled={!valid.length || busy}>{busy ? 'Saving…' : `Save ${valid.length || ''} file${valid.length === 1 ? '' : 's'}`}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

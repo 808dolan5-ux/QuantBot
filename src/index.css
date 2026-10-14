@@ -108,3 +108,12 @@
   .quant-md th, .quant-md td { @apply border border-border px-3 py-1.5 text-left; }
   .quant-md blockquote { @apply border-l-2 border-primary pl-4 text-muted-foreground; }
 }
+
+/* Every button dips down when pressed, then springs back */
+button, [role="button"], a[href] {
+  transition: transform 0.18s cubic-bezier(0.3, 1.6, 0.5, 1), background-color 0.15s, color 0.15s, opacity 0.15s;
+}
+button:active:not(:disabled), [role="button"]:active, a[href]:active {
+  transform: translateY(2px) scale(0.95);
+  transition-duration: 0.06s;
+}

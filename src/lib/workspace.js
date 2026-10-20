@@ -24,11 +24,13 @@ Never edit \`data/\`; QuantBot rewrites it.
 `;
 
 // Candles + quant stats for every market, plus agent instructions (AGENTS.md, CLAUDE.md, GEMINI.md)
-export async function exportWorkspaceData() {
-  for (const f of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', 'README.md']) await ws('write', f, GUIDE);
+// prefix: '' for the main folder, 'local-models/<model>/' for a local AI model's folder
+export async function exportWorkspaceData(prefix = '') {
+  for (const f of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', 'README.md']) await ws('write', `${prefix}${f}`, GUIDE);
+  for (const sub of ['inbox', 'scripts', 'results']) await ws('write', `${prefix}${sub}/.keep`, '');
   for (const ds of await loadDatasets()) {
     const bars = await loadBars(ds);
-    const base = `data/${ds.symbol}_${ds.timeframe}`;
+    const base = `${prefix}data/${ds.symbol}_${ds.timeframe}`;
     const rows = ['time,open,high,low,close,volume'];
     for (let i = 0; i < bars.time.length; i++) rows.push(`${new Date(bars.time[i]).toISOString()},${bars.open[i]},${bars.high[i]},${bars.low[i]},${bars.close[i]},${bars.volume[i]}`);
     await ws('write', `${base}.csv`, rows.join('\n'));

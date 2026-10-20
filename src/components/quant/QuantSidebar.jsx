@@ -1,4 +1,4 @@
-import { Plus, X, FlaskConical, History, CalendarDays, ArrowLeftRight, Wallet, Grid3x3 } from 'lucide-react';
+import { Plus, X, FlaskConical, History, CalendarDays, ArrowLeftRight, Wallet, Grid3x3, Cpu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import GroupPills from './GroupPills';
 import ProfileFooter from './ProfileFooter';
@@ -41,6 +41,10 @@ export default function QuantSidebar({ user, sessions, activeId, activeGroup, on
           <Link to="/quant-data" className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent text-sm font-medium">
             <span className="w-6 h-6 rounded-full bg-sidebar-accent flex items-center justify-center"><Grid3x3 className="w-4 h-4 text-primary" /></span>
             Quant data
+          </Link>
+          <Link to="/local-ai" className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent text-sm font-medium">
+            <span className="w-6 h-6 rounded-full bg-sidebar-accent flex items-center justify-center"><Cpu className="w-4 h-4 text-primary" /></span>
+            Local AI
           </Link>
         </div>
         <GroupPills active={activeGroup} onSelect={onGroup} />

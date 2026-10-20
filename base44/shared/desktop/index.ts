@@ -6,6 +6,7 @@ import { createDb } from './db.ts';
 import { createUser, createKeys, createFiles } from './store.ts';
 import { createFunctions } from './functions.ts';
 import { createWorkspace } from './workspace.ts';
+import { localAi } from './localai.ts';
 
 export function createBackend({ dataDir, encrypt, decrypt, userName }) {
   fs.mkdirSync(dataDir, { recursive: true });
@@ -26,6 +27,11 @@ export function createBackend({ dataDir, encrypt, decrypt, userName }) {
           const fn = functions[args[0]];
           if (!fn) throw new Error(`Unknown function ${args[0]}`);
           return fn(args[1] || {});
+        }
+        case 'localai': {
+          const op = localAi[args[0]];
+          if (!op) throw new Error(`Unknown local AI op ${args[0]}`);
+          return op(...args.slice(1));
         }
         case 'workspace': {
           const op = workspace[args[0]];

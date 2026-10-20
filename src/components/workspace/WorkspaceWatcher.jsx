@@ -15,7 +15,8 @@ async function processInbox() {
   const [user, status, datasets] = await Promise.all([base44.auth.me(), getKeyStatus(), loadDatasets()]);
   const model = status?.anthropic?.linked || status?.google?.linked ? defaultModel(status, user) : 'builtin';
   for (const f of files) {
-    const name = f.file.replace(/\.(mq5|pine)$/i, '');
+    const model = f.sub ? f.sub.split('/')[1] : '';
+    const name = (model ? `${model} ` : '') + f.file.replace(/\.(mq5|pine)$/i, '');
     const script = { code: f.code, language: /\.pine$/i.test(f.file) ? 'Pine' : 'MT5' };
     const t = toast({ title: `Backtesting ${f.file} from the project folder...` });
     const results = [], errors = [];
@@ -24,7 +25,7 @@ async function processInbox() {
       catch (e) { errors.push(`${ds.symbol}: ${e.response?.data?.error || e.message}`); }
     }
     const json = results.map((r) => ({ symbol: r.ds.symbol, timeframe: r.ds.timeframe, start: r.start, end: r.end, version: r.version, metrics: r.metrics, checks: r.results, summary: r.summary, trades: r.trades.slice(0, 500), log: r.log.slice(-200) }));
-    await ws('finish', f.file, resultsMarkdown(name, results, errors), JSON.stringify({ name, results: json, errors }, null, 1));
+    await ws('finish', f.file, resultsMarkdown(name, results, errors), JSON.stringify({ name, results: json, errors }, null, 1), f.sub);
     t.update({ id: t.id, title: `${f.file} tested, results written` });
   }
 }

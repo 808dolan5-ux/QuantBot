@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import * as api from '@/lib/quantApi';
+import { testRequest, runChatTest } from '@/lib/chatTest';
 import { missingKey } from '@/lib/models';
 import { useToast } from '@/components/ui/use-toast';
 import QuantSidebar from '@/components/quant/QuantSidebar';
@@ -60,8 +61,20 @@ export default function QuantChat() {
     const userMsg = await api.addUserMessage(id, text);
     setMessages((m) => [...m, userMsg]);
     try {
-      const reply = await api.askQuantAI(id, style, model);
+      let reply = await api.askQuantAI(id, style, model);
       setMessages((m) => [...m, reply]);
+      // Model replied with /test: backtest the script, send results back, let it improve (max 3 rounds)
+      for (let round = 0; round < 3; round++) {
+        const script = testRequest(reply.content);
+        if (!script) break;
+        const t = toast({ title: 'Backtesting the script on every market...' });
+        const results = await runChatTest(session?.title || text.slice(0, 40), script, model.startsWith('local:') ? 'builtin' : model);
+        t.dismiss();
+        const resultMsg = await api.addUserMessage(id, results);
+        setMessages((m) => [...m, resultMsg]);
+        reply = await api.askQuantAI(id, style, model);
+        setMessages((m) => [...m, reply]);
+      }
     } catch (e) {
       toast({ title: 'Message failed', description: e.response?.data?.error || e.message, variant: 'destructive' });
     }

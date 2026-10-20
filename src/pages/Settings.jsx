@@ -8,10 +8,12 @@ import MarketDataCard from '@/components/settings/MarketDataCard';
 import WorkspaceCard from '@/components/settings/WorkspaceCard';
 import UpdatesCard from '@/components/settings/UpdatesCard';
 import ServerCard from '@/components/localai/ServerCard';
+import LocalModelsList from '@/components/localai/LocalModelsList';
 import { IS_LOCAL } from '@/desktop/isLocal';
 
 export default function Settings() {
   const [status, setStatus] = useState(null);
+  const [detectKey, setDetectKey] = useState(0);
 
   useEffect(() => { getKeyStatus().then(setStatus); }, []);
 
@@ -42,7 +44,8 @@ export default function Settings() {
 
         <section className="mt-8 space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Local AI</h2>
-          <ServerCard onSaved={() => {}} />
+          <ServerCard onSaved={() => setDetectKey((k) => k + 1)} />
+          <LocalModelsList refresh={detectKey} />
           <p className="text-xs text-muted-foreground">Connect Ollama or LM Studio running on this PC. Its models show up in the chat's model list.</p>
         </section>
 

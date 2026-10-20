@@ -8,7 +8,7 @@ export default async function (req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { session_id, style, model } = await req.json();
+    const { session_id, style, model, context } = await req.json();
     if (!session_id) return Response.json({ error: 'session_id required' }, { status: 400 });
     const useOwnKey = model && model !== 'builtin';
     if (useOwnKey && !providerOf(model)) return Response.json({ error: 'Unknown model' }, { status: 400 });
@@ -20,7 +20,7 @@ export default async function (req) {
 
     const page = await base44.entities.ChatMessage.filter({ session_id }, { sort: '-created_date', limit: 20 });
     const history = chatHistory((page.items ?? page).slice().reverse());
-    const system = chatSystem(session.group, style, user.full_name);
+    const system = chatSystem(session.group, style, user.full_name) + (context ? `\n\n${String(context).slice(0, 7000)}` : '');
 
     const reply = useOwnKey
       ? await callUserModel(base44, user.id, model, system, toTurns(history))

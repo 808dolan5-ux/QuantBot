@@ -21,7 +21,6 @@ import Accounts from '@/pages/Accounts';
 import QuantData from '@/pages/QuantData';
 import WorkspaceWatcher from '@/components/workspace/WorkspaceWatcher';
 import LocalAiWatcher from '@/components/workspace/LocalAiWatcher';
-import LocalAi from '@/pages/LocalAi';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -63,7 +62,6 @@ const AuthenticatedApp = () => {
         <Route path="/pnl" element={<PnlCalendar />} />
         <Route path="/accounts" element={<Accounts />} />
         <Route path="/quant-data" element={<QuantData />} />
-        <Route path="/local-ai" element={<LocalAi />} />
       </Route>
       {/* Add your page Route elements here */}
       <Route path="*" element={<PageNotFound />} />

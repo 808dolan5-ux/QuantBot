@@ -7,6 +7,7 @@ import DefaultModelsCard from '@/components/settings/DefaultModelsCard';
 import MarketDataCard from '@/components/settings/MarketDataCard';
 import WorkspaceCard from '@/components/settings/WorkspaceCard';
 import UpdatesCard from '@/components/settings/UpdatesCard';
+import ServerCard from '@/components/localai/ServerCard';
 import { IS_LOCAL } from '@/desktop/isLocal';
 
 export default function Settings() {
@@ -37,6 +38,12 @@ export default function Settings() {
         <section className="mt-8 space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Models</h2>
           <DefaultModelsCard />
+        </section>
+
+        <section className="mt-8 space-y-3">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Local AI</h2>
+          <ServerCard onSaved={() => {}} />
+          <p className="text-xs text-muted-foreground">Connect Ollama or LM Studio running on this PC. Its models show up in the chat's model list.</p>
         </section>
 
         <section className="mt-8 space-y-3">

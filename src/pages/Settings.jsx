@@ -5,6 +5,7 @@ import { getKeyStatus } from '@/lib/quantApi';
 import ProviderKeyCard from '@/components/quant/ProviderKeyCard';
 import DefaultModelsCard from '@/components/settings/DefaultModelsCard';
 import MarketDataCard from '@/components/settings/MarketDataCard';
+import WorkspaceCard from '@/components/settings/WorkspaceCard';
 import UpdatesCard from '@/components/settings/UpdatesCard';
 import { IS_LOCAL } from '@/desktop/isLocal';
 
@@ -42,6 +43,13 @@ export default function Settings() {
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Market data</h2>
           <MarketDataCard />
         </section>
+
+        {IS_LOCAL && (
+          <section className="mt-8 space-y-3">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Agent workspace</h2>
+            <WorkspaceCard />
+          </section>
+        )}
 
         {IS_LOCAL && (
           <section className="mt-8 space-y-3">

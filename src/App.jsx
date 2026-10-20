@@ -19,6 +19,7 @@ import TestHistory from '@/pages/TestHistory';
 import PnlCalendar from '@/pages/PnlCalendar';
 import Accounts from '@/pages/Accounts';
 import QuantData from '@/pages/QuantData';
+import WorkspaceWatcher from '@/components/workspace/WorkspaceWatcher';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -76,6 +77,7 @@ function App() {
         <Router>
           <ScrollToTop />
           <AuthenticatedApp />
+          <WorkspaceWatcher />
         </Router>
         <Toaster />
       </QueryClientProvider>

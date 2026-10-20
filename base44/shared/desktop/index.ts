@@ -5,6 +5,7 @@ import path from 'node:path';
 import { createDb } from './db.ts';
 import { createUser, createKeys, createFiles } from './store.ts';
 import { createFunctions } from './functions.ts';
+import { createWorkspace } from './workspace.ts';
 
 export function createBackend({ dataDir, encrypt, decrypt, userName }) {
   fs.mkdirSync(dataDir, { recursive: true });
@@ -13,6 +14,7 @@ export function createBackend({ dataDir, encrypt, decrypt, userName }) {
   const keys = createKeys(dataDir, encrypt, decrypt);
   const files = createFiles(path.join(dataDir, 'files'));
   const functions = createFunctions({ db, user, keys });
+  const workspace = createWorkspace(dataDir);
 
   return {
     handle(kind, ...args) {
@@ -24,6 +26,11 @@ export function createBackend({ dataDir, encrypt, decrypt, userName }) {
           const fn = functions[args[0]];
           if (!fn) throw new Error(`Unknown function ${args[0]}`);
           return fn(args[1] || {});
+        }
+        case 'workspace': {
+          const op = workspace[args[0]];
+          if (!op) throw new Error(`Unknown workspace op ${args[0]}`);
+          return op(...args.slice(1));
         }
         default: throw new Error('Unknown request');
       }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, History } from 'lucide-react';
 import * as api from '@/lib/quantApi';
@@ -20,7 +20,9 @@ export default function StrategyConverter() {
     strategy: '', rules: '', target: 'MT5', model: 'claude-opus-5', windowId: '1w',
     customFrom: '2026-01-01', customTo: '2026-03-31', botName: '', datasetIds: DEFAULT_DATASET_IDS, balance: 10000,
   });
-  const set = (key, value) => setCfg((c) => ({ ...c, [key]: value }));
+  const set = useCallback((key, value) => setCfg((c) => ({ ...c, [key]: value })), []);
+  const onStrategy = useCallback((v) => set('strategy', v), [set]);
+  const onRules = useCallback((v) => set('rules', v), [set]);
   const [keyStatus, setKeyStatus] = useState(null);
   const lab = useStrategyLab(cfg);
 
@@ -51,7 +53,7 @@ export default function StrategyConverter() {
         />
         <TestSettings cfg={cfg} set={set} datasets={lab.datasets} />
         {needsKey && <div className="-mx-4 md:-mx-6"><NoKeyBanner provider={missing} onSaved={setKeyStatus} /></div>}
-        <StrategyForm strategy={cfg.strategy} onStrategy={(v) => set('strategy', v)} rules={cfg.rules} onRules={(v) => set('rules', v)} />
+        <StrategyForm strategy={cfg.strategy} onStrategy={onStrategy} rules={cfg.rules} onRules={onRules} />
         {lab.running && (
           <div className="flex flex-col items-center gap-2 py-6 text-sm text-muted-foreground">
             <ChartLoader className="w-20 h-12" />{lab.phase}

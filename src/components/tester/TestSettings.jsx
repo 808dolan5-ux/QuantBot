@@ -1,5 +1,6 @@
 import { Input } from '@/components/ui/input';
 import DatasetPicker from '@/components/tester/DatasetPicker';
+import LazyField from '@/components/tester/LazyField';
 
 const fmt = (iso) => (iso ? iso.slice(0, 10) : '?');
 
@@ -10,7 +11,7 @@ export default function TestSettings({ cfg, set, datasets }) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <label className="space-y-1">
           <span className="text-xs text-muted-foreground">Bot name (tracks unseen data)</span>
-          <Input value={cfg.botName} onChange={(e) => set('botName', e.target.value)} placeholder="e.g. Gold EMA Scalper" className="bg-card" />
+          <LazyField as={Input} value={cfg.botName} onCommit={(v) => set('botName', v)} placeholder="e.g. Gold EMA Scalper" className="bg-card" />
         </label>
         <label className="space-y-1">
           <span className="text-xs text-muted-foreground">Market data</span>

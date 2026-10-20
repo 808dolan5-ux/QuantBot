@@ -9,6 +9,7 @@ import WorkspaceCard from '@/components/settings/WorkspaceCard';
 import UpdatesCard from '@/components/settings/UpdatesCard';
 import ServerCard from '@/components/localai/ServerCard';
 import LocalModelsList from '@/components/localai/LocalModelsList';
+import AgentTeamCard from '@/components/localai/AgentTeamCard';
 import { IS_LOCAL } from '@/desktop/isLocal';
 
 export default function Settings() {
@@ -46,6 +47,7 @@ export default function Settings() {
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Local AI</h2>
           <ServerCard onSaved={() => setDetectKey((k) => k + 1)} />
           <LocalModelsList refresh={detectKey} />
+          <AgentTeamCard />
           <p className="text-xs text-muted-foreground">Connect Ollama or LM Studio running on this PC. Its models show up in the chat's model list.</p>
         </section>
 

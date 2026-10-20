@@ -48,6 +48,11 @@ export function createWorkspace(dataDir) {
     write(rel, text) { fs.writeFileSync(inside(rel), String(text)); return true; },
     read(rel) { const p = inside(rel); return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : ''; },
     exists(rel) { return fs.existsSync(inside(rel)); },
+    remove(rel) { const p = inside(rel); if (fs.existsSync(p)) fs.rmSync(p, { recursive: true }); return true; },
+    list(rel) {
+      const p = inside(`${rel.replace(/\/?$/, '/')}x`).slice(0, -1);
+      return fs.existsSync(p) ? fs.readdirSync(p).map((f) => (fs.statSync(path.join(p, f)).isDirectory() ? `${f}/` : f)) : [];
+    },
     // Main inbox plus every local model's inbox
     scan() {
       if (!folder()) return [];

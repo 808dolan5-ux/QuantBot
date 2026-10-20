@@ -1,6 +1,7 @@
 import { createTA } from './indicators';
 
 const MAX_LOTS = 100;
+const SLIP = 1; // points of adverse slippage on every market / stop fill
 
 // Bar-by-bar simulator: signals on bar close, fills at next bar open, SL checked before TP intrabar.
 export function runBacktest({ bars, startIndex, simCode, balance, contractSize, point }) {
@@ -21,15 +22,17 @@ export function runBacktest({ bars, startIndex, simCode, balance, contractSize, 
   let cash = balance, pos = null, pending = null, errors = 0;
 
   const ask = (k, price) => price + bars.spread[k] * point;
-  const exitAt = (k, price, reason) => {
+  const exitAt = (k, price, reason, slip = false) => {
     const dir = pos.side === 'long' ? 1 : -1;
+    if (slip) { price -= dir * SLIP * point; pos.slipFills++; }
+    const cost = pos.lots * contractSize * point;
     const pnl = (price - pos.entry) * dir * pos.lots * contractSize;
     cash += pnl;
-    trades.push({ ...pos, exit: price, exitTime: bars.time[k], pnl, reason });
+    trades.push({ ...pos, exit: price, exitTime: bars.time[k], pnl, reason, spreadCost: pos.spreadPts * cost, slipCost: pos.slipFills * SLIP * cost });
     add(pnl >= 0 ? 'info' : 'warn', `Closed ${pos.side} (${reason}) @ ${price.toFixed(2)}: ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}`, bars.time[k]);
     pos = null;
   };
-  const marketExit = (k, reason) => exitAt(k, pos.side === 'long' ? bars.open[k] : ask(k, bars.open[k]), reason);
+  const marketExit = (k, reason) => exitAt(k, pos.side === 'long' ? bars.open[k] : ask(k, bars.open[k]), reason, true);
 
   for (; i < n; i++) {
     const t = bars.time[i], o = bars.open[i], h = bars.high[i], l = bars.low[i], c = bars.close[i];
@@ -40,8 +43,8 @@ export function runBacktest({ bars, startIndex, simCode, balance, contractSize, 
         const side = pending.action === 'buy' ? 'long' : 'short';
         if (pos && pos.side !== side) marketExit(i, 'reverse');
         if (!pos) {
-          const entry = side === 'long' ? ask(i, o) : o;
-          pos = { side, entry, sl: pending.sl, tp: pending.tp, sl0: pending.sl, tp0: pending.tp, lots: pending.lots, entryTime: t, openIndex: i, mae: 0, mfe: 0 };
+          const entry = side === 'long' ? ask(i, o) + SLIP * point : o - SLIP * point;
+          pos = { side, entry, sl: pending.sl, tp: pending.tp, sl0: pending.sl, tp0: pending.tp, lots: pending.lots, entryTime: t, openIndex: i, mae: 0, mfe: 0, spreadPts: bars.spread[i] || 0, slipFills: 1 };
           add('info', `Opened ${side} ${pending.lots} lots @ ${entry.toFixed(2)} SL ${pending.sl?.toFixed(2) ?? 'none'} TP ${pending.tp?.toFixed(2) ?? 'none'}`, t);
         }
       }
@@ -52,9 +55,9 @@ export function runBacktest({ bars, startIndex, simCode, balance, contractSize, 
       const long = pos.side === 'long';
       pos.mfe = Math.max(pos.mfe, long ? h - pos.entry : pos.entry - ask(i, l));
       pos.mae = Math.max(pos.mae, long ? pos.entry - l : ask(i, h) - pos.entry);
-      if (long && pos.sl != null && l <= pos.sl) exitAt(i, Math.min(o, pos.sl), 'sl');
+      if (long && pos.sl != null && l <= pos.sl) exitAt(i, Math.min(o, pos.sl), 'sl', true);
       else if (long && pos.tp != null && h >= pos.tp) exitAt(i, Math.max(o, pos.tp), 'tp');
-      else if (!long && pos.sl != null && ask(i, h) >= pos.sl) exitAt(i, Math.max(ask(i, o), pos.sl), 'sl');
+      else if (!long && pos.sl != null && ask(i, h) >= pos.sl) exitAt(i, Math.max(ask(i, o), pos.sl), 'sl', true);
       else if (!long && pos.tp != null && ask(i, l) <= pos.tp) exitAt(i, Math.min(ask(i, o), pos.tp), 'tp');
     }
 

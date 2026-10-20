@@ -36,6 +36,7 @@ export function computeMetrics(trades, equity, startBalance, contractSize) {
     largestWin: wins.length ? Math.max(...wins) : 0, largestLoss: losses.length ? Math.min(...losses) : 0,
     maxLossStreak, longs: longs.length, shorts: shorts.length, longWinRate: rate(longs), shortWinRate: rate(shorts),
     slHits: trades.filter((t) => t.reason === 'sl').length, tpHits: trades.filter((t) => t.reason === 'tp').length,
+    grossWin, grossLoss, spreadCost: trades.reduce((a, t) => a + (t.spreadCost || 0), 0), slippageCost: trades.reduce((a, t) => a + (t.slipCost || 0), 0),
     avgHoldMins: trades.length ? trades.reduce((a, t) => a + (t.exitTime - t.entryTime), 0) / trades.length / 60000 : 0,
   };
 }

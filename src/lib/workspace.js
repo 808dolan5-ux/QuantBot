@@ -20,6 +20,11 @@ QuantBot (the desktop app) watches this folder and backtests trading scripts you
    \`inbox/<name>.results.md\` replaces it (full data in \`results/<name>.json\`).
 4. Read the results, improve the script, write it to \`inbox/\` again. Repeat.
 
+## Fast loop: BackTester
+Write or edit \`BackTester.mq5\` (or \`BackTester.pine\`) in this folder. Every time you save it, QuantBot
+backtests it on every market. Wait for \`BackTester.results.md\` to update (PnL, drawdown, spread and
+slippage costs, win rate, PF, R, SL/TP hits, per-rule checks), then refine the script and save again.
+
 Never edit \`data/\`; QuantBot rewrites it.
 `;
 
@@ -43,8 +48,14 @@ export function resultsMarkdown(name, results, errors) {
   const lines = [`# Backtest results: ${name}`, `Tested ${new Date().toISOString()}`, ''];
   for (const r of results) {
     const m = r.metrics;
+    const f = (v) => (Number.isFinite(v) ? Number(v).toFixed(2) : String(v ?? 'n/a'));
     lines.push(`## ${r.ds.symbol} ${r.ds.timeframe} (${r.start.slice(0, 10)} to ${r.end.slice(0, 10)})`,
-      `Net ${m.net.toFixed(2)} | trades ${m.trades} | win ${Number(m.winRate || 0).toFixed(1)}% | PF ${Number.isFinite(m.profitFactor) ? m.profitFactor.toFixed(2) : 'inf'} | max DD ${m.maxDDPct.toFixed(2)}%`,
+      `PnL: net ${f(m.net)} (${f(m.returnPct)}%) | gross win ${f(m.grossWin)} | gross loss ${f(m.grossLoss)} | final balance ${f(m.finalBalance)}`,
+      `Drawdown: max ${f(m.maxDD)} (${f(m.maxDDPct)}%) | max loss streak ${m.maxLossStreak} | Sharpe ${f(m.sharpe)}`,
+      `Costs: spread ${f(m.spreadCost)} | slippage ${f(m.slippageCost)} (1 point per market/stop fill)`,
+      `Trades ${m.trades} (long ${m.longs} / short ${m.shorts}) | win ${f(m.winRate)}% (long ${f(m.longWinRate)}% / short ${f(m.shortWinRate)}%) | PF ${f(m.profitFactor)}`,
+      `Avg win ${f(m.avgWin)} | avg loss ${f(m.avgLoss)} | expectancy ${f(m.expectancy)} | avg R ${f(m.avgR)} | largest win ${f(m.largestWin)} | largest loss ${f(m.largestLoss)}`,
+      `SL hits ${m.slHits} | TP hits ${m.tpHits} | avg hold ${f(m.avgHoldMins)} min`,
       ...r.results.map((x) => `- ${x.status} ${x.rule}: ${x.detail}`), '');
   }
   errors.forEach((e) => lines.push(`ERROR: ${e}`));

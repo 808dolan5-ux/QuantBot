@@ -25,7 +25,9 @@ async function processInbox() {
       catch (e) { errors.push(`${ds.symbol}: ${e.response?.data?.error || e.message}`); }
     }
     const json = results.map((r) => ({ symbol: r.ds.symbol, timeframe: r.ds.timeframe, start: r.start, end: r.end, version: r.version, metrics: r.metrics, checks: r.results, summary: r.summary, trades: r.trades.slice(0, 500), log: r.log.slice(-200) }));
-    await ws('finish', f.file, resultsMarkdown(name, results, errors), JSON.stringify({ name, results: json, errors }, null, 1), f.sub);
+    const md = resultsMarkdown(name, results, errors), out = JSON.stringify({ name, results: json, errors }, null, 1);
+    if (f.backtester) await ws('finishBackTester', f.file, md, out, f.sub, f.mtime);
+    else await ws('finish', f.file, md, out, f.sub);
     t.update({ id: t.id, title: `${f.file} tested, results written` });
   }
 }

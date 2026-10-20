@@ -26,6 +26,17 @@ export function createWorkspace(dataDir) {
       return { file: f, sub, mtime: fs.statSync(p).mtimeMs, code: fs.readFileSync(p, 'utf8') };
     }).filter((s) => Date.now() - s.mtime > 1500);
   };
+  // BackTester file edited since its last test (skips files still being written)
+  const scanBackTester = (sub) => {
+    const tested = Number(fs.existsSync(inside(`${sub}results/BackTester.tested`)) ? fs.readFileSync(inside(`${sub}results/BackTester.tested`), 'utf8') : 0);
+    return ['BackTester.mq5', 'BackTester.pine'].flatMap((f) => {
+      const p = inside(`${sub}${f}`);
+      if (!fs.existsSync(p)) return [];
+      const mtime = fs.statSync(p).mtimeMs;
+      if (mtime <= tested || Date.now() - mtime < 1500) return [];
+      return [{ file: f, sub, mtime, code: fs.readFileSync(p, 'utf8'), backtester: true }];
+    });
+  };
   return {
     get: () => ({ folder: folder() }),
     set(dir) {
@@ -42,7 +53,15 @@ export function createWorkspace(dataDir) {
       if (!folder()) return [];
       const models = path.dirname(inside('local-models/x'));
       const subs = fs.readdirSync(models).filter((m) => fs.statSync(path.join(models, m)).isDirectory()).map((m) => `local-models/${m}/`);
-      return ['', ...subs].flatMap(scanDir);
+      return ['', ...subs].flatMap((sub) => [...scanDir(sub), ...scanBackTester(sub)]);
+    },
+    // BackTester.mq5 / .pine stays in place; results sit next to it
+    finishBackTester(file, resultsMd, resultsJson, sub = '', mtime = 0) {
+      fs.writeFileSync(inside(`${sub}BackTester.results.md`), resultsMd);
+      fs.writeFileSync(inside(`${sub}results/latest.md`), resultsMd);
+      fs.writeFileSync(inside(`${sub}results/BackTester.json`), resultsJson);
+      fs.writeFileSync(inside(`${sub}results/BackTester.tested`), String(mtime));
+      return true;
     },
     // Script moves to scripts/, inbox/<name>.results.md takes its place, full results in results/
     finish(file, resultsMd, resultsJson, sub = '') {

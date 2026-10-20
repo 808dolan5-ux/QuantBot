@@ -1,3 +1,5 @@
+import { quantHeatmaps, quantDigest } from '@/lib/backtest/quantHeatmaps';
+
 const r2 = (v) => Math.round(v * 100) / 100;
 const median = (arr) => {
   const s = [...arr].sort((a, b) => a - b);
@@ -33,5 +35,6 @@ export function marketStats(bars) {
     medianSpreadPoints: spreads.length ? median(spreads) : null,
     avgBarRangeByServerHour: hours.map(([sum, c]) => (c ? r2(sum / c) : null)),
     periodReturnPct: r2(((bars.close[n - 1] - bars.close[0]) / bars.close[0]) * 100),
+    heatmaps: quantDigest(quantHeatmaps(bars)),
   };
 }

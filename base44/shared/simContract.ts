@@ -18,7 +18,7 @@ export function marketText(market) {
   if (!market) return '';
   let text = `MARKET: ${clip(market.symbol, 20)} ${clip(market.timeframe, 10)} bars, contract size ${Number(market.contract_size) || 100}, point ${Number(market.point) || 0.01}, starting balance ${Number(market.balance) || 10000}.`;
   if (market.stats && typeof market.stats === 'object') {
-    text += `\nMARKET STATS measured from the trader's data (price units; hours are broker server time): ${clip(JSON.stringify(market.stats), 2000)}`;
+    text += `\nMARKET STATS measured from the trader's data (price units; hours are broker server time; heatmaps list the strongest/weakest weekday-hour and year-month cells, returns in basis points). Use them to pick session filters, stop/target sizes and direction bias: ${clip(JSON.stringify(market.stats), 5000)}`;
   }
   return text;
 }

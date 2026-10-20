@@ -13,6 +13,7 @@ export const SERVERS = {
 export const getServer = () => JSON.parse(localStorage.getItem(KEY) || 'null') || { kind: 'ollama', url: SERVERS.ollama.url };
 export const setServer = (s) => localStorage.setItem(KEY, JSON.stringify(s));
 export const runningModels = () => ai('models', getServer());
+export const chatLocal = (model, messages) => ai('chat', getServer(), model, messages);
 
 export const slug = (model) => model.replace(/[^\w.-]+/g, '-');
 export const modelDir = (model) => `local-models/${slug(model)}/`;

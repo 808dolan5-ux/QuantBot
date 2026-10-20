@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { IS_LOCAL } from '@/desktop/isLocal';
+import { runningModels } from '@/lib/localAi';
 import { ArrowUp } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MODELS } from '@/lib/models';
@@ -8,6 +10,12 @@ const triggerCls = 'h-8 w-auto gap-2 border-border bg-transparent text-xs text-m
 
 export default function Composer({ onSend, disabled, style, onStyleChange, model, onModelChange }) {
   const [text, setText] = useState('');
+  const [local, setLocal] = useState([]);
+
+  // Desktop: list models currently running on the local AI server
+  useEffect(() => {
+    if (IS_LOCAL) runningModels().then(setLocal).catch(() => setLocal([]));
+  }, []);
 
   const submit = () => {
     if (!text.trim() || disabled) return;
@@ -38,6 +46,10 @@ export default function Composer({ onSend, disabled, style, onStyleChange, model
               <SelectTrigger className={triggerCls}><SelectValue /></SelectTrigger>
               <SelectContent>
                 {MODELS.map((m) => <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>)}
+                {local.map((m) => <SelectItem key={m} value={`local:${m}`}>Local AI: {m}</SelectItem>)}
+                {model.startsWith('local:') && !local.includes(model.slice(6)) && (
+                  <SelectItem value={model}>Local AI: {model.slice(6)}</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>

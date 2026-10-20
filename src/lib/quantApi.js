@@ -1,5 +1,7 @@
 import { base44 } from '@/api/base44Client';
 
+import { chatLocal } from '@/lib/localAi';
+
 const { ChatSession, ChatMessage } = base44.entities;
 
 export async function loadSessions(userId, group) {
@@ -25,8 +27,19 @@ export const addUserMessage = (sessionId, content) =>
   ChatMessage.create({ session_id: sessionId, role: 'user', content });
 
 export async function askQuantAI(sessionId, style, model) {
+  if (model.startsWith('local:')) return askLocal(sessionId, style, model.slice(6));
   const res = await base44.functions.invoke('quantChat', { session_id: sessionId, style, model });
   return res.data.message;
+}
+
+// Desktop: a model running on this PC answers as QuantBot; nothing goes to the cloud AI
+async function askLocal(sessionId, style, localModel) {
+  const history = (await loadMessages(sessionId)).map((m) => ({ role: m.role, content: m.content }));
+  const system = `You are QuantBot, an expert quant trading assistant. Write strategies only in MQL5 (MT5) or Pine Script v5, always including the entire code in one fenced block. Reply style: ${style}.`;
+  const content = await chatLocal(localModel, [{ role: 'system', content: system }, ...history]);
+  const message = await ChatMessage.create({ session_id: sessionId, role: 'assistant', content });
+  await ChatSession.update(sessionId, { last_message_at: new Date().toISOString() });
+  return message;
 }
 
 // API keys: encrypted and decrypted only on the server

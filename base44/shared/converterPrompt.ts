@@ -10,6 +10,10 @@ const TARGETS = {
 
 export const CONVERTER_SYSTEM = `You are QuantBot's strategy converter and rule auditor. Convert the trader's strategy into the requested platform, write a matching simulation for QuantBot's backtester, and audit the code against every rule the trader gave.
 - Output the FULL code file, never truncated, no placeholders.
+- Implement the trader's strategy exactly as written. Never add stops, targets, filters or exits they didn't ask for. If an entry has no stop or target, use the defaults below and say so in summary.
+- Risk %: size every position from the stop distance (Pine: qty = equity * risk / (stop distance in price * pointvalue); MQL5: lots from SYMBOL_TRADE_TICK_VALUE/TICK_SIZE and the stop distance), never as a % of equity spent on the position.
+- Pips and points: convert stated pips to price with the symbol's pip size (10 x point on 5/3-digit symbols, else point); never treat pips as ticks.
+- Crossover systems: exit or reverse on the opposite cross when the strategy implies it (stop-and-reverse or "exit on opposite signal").
 - ${SIM_CONTRACT}
 - The code must follow the DISTINCT SIGNALS standard given in the task, and the mandatory signal rule is always audited.
 - Test each rule strictly against the converted code: "pass" if enforced, "fail" if violated or ignored, "warn" if partly enforced or not verifiable from code alone.

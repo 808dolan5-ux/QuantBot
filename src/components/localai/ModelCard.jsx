@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { writeScript, modelDir, ensureModelFolder } from '@/lib/localAi';
 
-export default function ModelCard({ model, folder }) {
+export default function ModelCard({ model, folder, demo }) {
   const [language, setLanguage] = useState('MT5');
   const [idea, setIdea] = useState('');
   const [busy, setBusy] = useState(false);
@@ -13,6 +13,11 @@ export default function ModelCard({ model, folder }) {
 
   const run = async () => {
     setBusy(true); setMsg('');
+    if (demo) {
+      await new Promise((r) => setTimeout(r, 1500));
+      setMsg(`Preview: saved script-demo.${language === 'Pine' ? 'pine' : 'mq5'}. Backtesting now, results replace it in the inbox.`);
+      return setBusy(false);
+    }
     try {
       await ensureModelFolder(model);
       const file = await writeScript(model, language, idea);

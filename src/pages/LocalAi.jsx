@@ -32,7 +32,13 @@ export default function LocalAi() {
           <h1 className="font-heading text-xl font-semibold">Local AI</h1>
         </div>
         <p className="text-xs text-muted-foreground">Every model running on this PC gets its own folder with all market data, stats and heatmaps. Scripts it writes are backtested on every market automatically.</p>
-        {!IS_LOCAL ? <p className="text-sm text-primary">Available in the QuantBot desktop app.</p> : !folder ? (
+        {!IS_LOCAL ? (
+          <>
+            <p className="text-xs text-primary">Preview with a sample model. It works for real in the desktop app.</p>
+            <ServerCard onSaved={() => {}} />
+            <ModelCard model="qwen3:8b" folder="C:\QuantBot\agents" demo />
+          </>
+        ) : !folder ? (
           <p className="text-sm">Set the agent project folder in <Link to="/settings" className="text-primary underline">Settings</Link> first.</p>
         ) : (
           <>

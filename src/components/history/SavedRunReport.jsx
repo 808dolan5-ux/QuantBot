@@ -14,7 +14,7 @@ import { loadRunTrades, equityFromTrades, parseLog } from '@/lib/history';
 export default function SavedRunReport({ run, balance }) {
   const [trades, setTrades] = useState(null);
   useEffect(() => { loadRunTrades(run.id).then(setTrades); }, [run.id]);
-  const startBal = balance ?? run.metrics.finalBalance - run.metrics.net;
+  const startBal = balance ?? (run.metrics?.finalBalance ?? 0) - (run.metrics?.net ?? 0);
   const log = parseLog(run.log);
 
   return (
@@ -22,7 +22,7 @@ export default function SavedRunReport({ run, balance }) {
       <p className="text-xs text-muted-foreground">
         v{run.version} · {run.window_label}: {run.start?.slice(0, 10)} to {run.end?.slice(0, 10)} · {run.symbol} · saved {run.created_date?.slice(0, 16).replace('T', ' ')}
       </p>
-      <MetricsGrid m={run.metrics} />
+      <MetricsGrid m={run.metrics || {}} />
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>

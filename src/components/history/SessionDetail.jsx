@@ -10,7 +10,11 @@ export default function SessionDetail({ session }) {
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
-    base44.entities.StrategyRun.filter({ session_id: session.id }, { sort: 'version', limit: 100 }).then((page) => {
+    const opts = { sort: 'version', limit: 100 };
+    // Older runs were saved without a session link; match them by bot name instead
+    base44.entities.StrategyRun.filter({ session_id: session.id }, opts).then((page) => (
+      page.items.length ? page : base44.entities.StrategyRun.filter({ bot_name: session.bot_name, session_id: { $exists: false } }, opts)
+    )).then((page) => {
       setRuns(page.items);
       setIdx(page.items.length - 1);
     });
